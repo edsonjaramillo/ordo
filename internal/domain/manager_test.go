@@ -1,6 +1,9 @@
 package domain
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestDetectManagerPrecedence(t *testing.T) {
 	tests := []struct {
@@ -99,5 +102,177 @@ func TestBuildInstallCommand(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestBuildGlobalInstallCommand(t *testing.T) {
+	tests := []struct {
+		name    string
+		manager PackageManager
+		pkgs    []string
+		want    []string
+		wantErr bool
+	}{
+		{
+			name:    "npm",
+			manager: ManagerNPM,
+			pkgs:    []string{"typescript"},
+			want:    []string{"npm", "install", "--global", "typescript"},
+		},
+		{
+			name:    "pnpm",
+			manager: ManagerPNPM,
+			pkgs:    []string{"typescript"},
+			want:    []string{"pnpm", "add", "--global", "typescript"},
+		},
+		{
+			name:    "yarn",
+			manager: ManagerYarn,
+			pkgs:    []string{"typescript"},
+			want:    []string{"yarn", "global", "add", "typescript"},
+		},
+		{
+			name:    "bun",
+			manager: ManagerBun,
+			pkgs:    []string{"typescript"},
+			want:    []string{"bun", "add", "--global", "typescript"},
+		},
+		{
+			name:    "empty package list",
+			manager: ManagerNPM,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := BuildGlobalInstallCommand(tc.manager, tc.pkgs)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("BuildGlobalInstallCommand() error = nil, want non-nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("BuildGlobalInstallCommand() error = %v", err)
+			}
+			if len(got) != len(tc.want) {
+				t.Fatalf("BuildGlobalInstallCommand() len = %d, want %d (%#v)", len(got), len(tc.want), got)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Fatalf("BuildGlobalInstallCommand()[%d] = %q, want %q", i, got[i], tc.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestBuildGlobalUninstallCommand(t *testing.T) {
+	tests := []struct {
+		name    string
+		manager PackageManager
+		pkgs    []string
+		want    []string
+		wantErr bool
+	}{
+		{
+			name:    "npm",
+			manager: ManagerNPM,
+			pkgs:    []string{"typescript"},
+			want:    []string{"npm", "uninstall", "--global", "typescript"},
+		},
+		{
+			name:    "pnpm",
+			manager: ManagerPNPM,
+			pkgs:    []string{"typescript"},
+			want:    []string{"pnpm", "remove", "--global", "typescript"},
+		},
+		{
+			name:    "yarn",
+			manager: ManagerYarn,
+			pkgs:    []string{"typescript"},
+			want:    []string{"yarn", "global", "remove", "typescript"},
+		},
+		{
+			name:    "bun",
+			manager: ManagerBun,
+			pkgs:    []string{"typescript"},
+			want:    []string{"bun", "remove", "--global", "typescript"},
+		},
+		{
+			name:    "empty package list",
+			manager: ManagerNPM,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := BuildGlobalUninstallCommand(tc.manager, tc.pkgs)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("BuildGlobalUninstallCommand() error = nil, want non-nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("BuildGlobalUninstallCommand() error = %v", err)
+			}
+			if len(got) != len(tc.want) {
+				t.Fatalf("BuildGlobalUninstallCommand() len = %d, want %d (%#v)", len(got), len(tc.want), got)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Fatalf("BuildGlobalUninstallCommand()[%d] = %q, want %q", i, got[i], tc.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestSupportedPackageManagers(t *testing.T) {
+	got := SupportedPackageManagers()
+	want := []string{"npm", "pnpm", "yarn", "bun"}
+	if len(got) != len(want) {
+		t.Fatalf("len = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestParsePackageManager(t *testing.T) {
+	tests := []struct {
+		in      string
+		want    PackageManager
+		wantErr bool
+	}{
+		{in: "npm", want: ManagerNPM},
+		{in: "PNPM", want: ManagerPNPM},
+		{in: " yarn ", want: ManagerYarn},
+		{in: "bun", want: ManagerBun},
+		{in: "invalid", wantErr: true},
+	}
+
+	for _, tc := range tests {
+		got, err := ParsePackageManager(tc.in)
+		if tc.wantErr {
+			if err == nil {
+				t.Fatalf("ParsePackageManager(%q) expected error", tc.in)
+			}
+			if !strings.Contains(err.Error(), "supported: npm, pnpm, yarn, bun") {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("ParsePackageManager(%q) error: %v", tc.in, err)
+		}
+		if got != tc.want {
+			t.Fatalf("ParsePackageManager(%q) = %s, want %s", tc.in, got, tc.want)
+		}
 	}
 }

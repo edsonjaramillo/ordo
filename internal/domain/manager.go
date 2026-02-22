@@ -1,6 +1,9 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type PackageManager string
 
@@ -10,6 +13,31 @@ const (
 	ManagerYarn PackageManager = "yarn"
 	ManagerBun  PackageManager = "bun"
 )
+
+func SupportedPackageManagers() []string {
+	return []string{
+		string(ManagerNPM),
+		string(ManagerPNPM),
+		string(ManagerYarn),
+		string(ManagerBun),
+	}
+}
+
+func ParsePackageManager(raw string) (PackageManager, error) {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case string(ManagerNPM):
+		return ManagerNPM, nil
+	case string(ManagerPNPM):
+		return ManagerPNPM, nil
+	case string(ManagerYarn):
+		return ManagerYarn, nil
+	case string(ManagerBun):
+		return ManagerBun, nil
+	default:
+		return "", fmt.Errorf("unsupported package manager: %q (supported: %s)", raw, strings.Join(SupportedPackageManagers(), ", "))
+	}
+}
 
 func DetectManager(lockfiles map[string]bool) PackageManager {
 	if lockfiles["bun.lockb"] || lockfiles["bun.lock"] {
@@ -89,13 +117,8 @@ func (o InstallOptions) validate() error {
 }
 
 func BuildInstallCommand(manager PackageManager, pkgs []string, opts InstallOptions) ([]string, error) {
-	if len(pkgs) == 0 {
-		return nil, fmt.Errorf("at least one package is required")
-	}
-	for _, pkg := range pkgs {
-		if pkg == "" {
-			return nil, fmt.Errorf("package cannot be empty")
-		}
+	if err := validatePackages(pkgs); err != nil {
+		return nil, err
 	}
 	if err := opts.validate(); err != nil {
 		return nil, err
@@ -174,5 +197,61 @@ func BuildInstallCommand(manager PackageManager, pkgs []string, opts InstallOpti
 	default:
 		return nil, fmt.Errorf("unsupported package manager: %s", manager)
 	}
+	return append(cmd, pkgs...), nil
+}
+
+func validatePackages(pkgs []string) error {
+	if len(pkgs) == 0 {
+		return fmt.Errorf("at least one package is required")
+	}
+	for _, pkg := range pkgs {
+		if pkg == "" {
+			return fmt.Errorf("package cannot be empty")
+		}
+	}
+	return nil
+}
+
+func BuildGlobalInstallCommand(manager PackageManager, pkgs []string) ([]string, error) {
+	if err := validatePackages(pkgs); err != nil {
+		return nil, err
+	}
+
+	var cmd []string
+	switch manager {
+	case ManagerNPM:
+		cmd = []string{"npm", "install", "--global"}
+	case ManagerPNPM:
+		cmd = []string{"pnpm", "add", "--global"}
+	case ManagerYarn:
+		cmd = []string{"yarn", "global", "add"}
+	case ManagerBun:
+		cmd = []string{"bun", "add", "--global"}
+	default:
+		return nil, fmt.Errorf("unsupported package manager: %s", manager)
+	}
+
+	return append(cmd, pkgs...), nil
+}
+
+func BuildGlobalUninstallCommand(manager PackageManager, pkgs []string) ([]string, error) {
+	if err := validatePackages(pkgs); err != nil {
+		return nil, err
+	}
+
+	var cmd []string
+	switch manager {
+	case ManagerNPM:
+		cmd = []string{"npm", "uninstall", "--global"}
+	case ManagerPNPM:
+		cmd = []string{"pnpm", "remove", "--global"}
+	case ManagerYarn:
+		cmd = []string{"yarn", "global", "remove"}
+	case ManagerBun:
+		cmd = []string{"bun", "remove", "--global"}
+	default:
+		return nil, fmt.Errorf("unsupported package manager: %s", manager)
+	}
+
 	return append(cmd, pkgs...), nil
 }

@@ -54,7 +54,20 @@ ordo install eslint typescript --dev --exact
 ordo install react --workspace ui
 ```
 
+Global package management:
+
+```bash
+ordo global install pnpm typescript
+ordo global uninstall pnpm typescript
+```
+
+Global store lookup notes:
+
+- `pnpm` global modules are resolved from `pnpm root -g` first, then from `PNPM_HOME/global/<layout>/node_modules` and default pnpm global locations.
+
 Shell completion support:
 
 - `ordo install <TAB>` suggests package names (registry-aware with local fallback).
 - `ordo install --workspace <TAB>` suggests discovered workspace keys.
+- `ordo global install <TAB>` suggests package managers first, then package names.
+- `ordo global uninstall <TAB>` suggests package managers first, then installed global package names for the selected manager.

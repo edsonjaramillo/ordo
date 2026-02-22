@@ -28,10 +28,14 @@ func NewRootCmd() (*cobra.Command, error) {
 	printer := output.NewPrinter()
 	installCompletion := app.NewInstallCompletionService(discovery, suggestor)
 	completer := completion.NewTargetCompleter(discovery, installCompletion)
+	globalCompletion := app.NewGlobalCompletionService(installCompletion, runner)
+	globalCompleter := completion.NewGlobalCompleter(globalCompletion)
 
 	runUC := app.NewRunUseCase(discovery, runner)
 	installUC := app.NewInstallUseCase(discovery, runner)
 	uninstallUC := app.NewUninstallUseCase(discovery, runner)
+	globalInstallUC := app.NewGlobalInstallUseCase(runner)
+	globalUninstallUC := app.NewGlobalUninstallUseCase(runner, runner)
 	var colorFlag string
 	var noLevelFlag bool
 
@@ -69,6 +73,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	cmd.AddCommand(newRunCmd(runUC, completer, printer))
 	cmd.AddCommand(newInstallCmd(installUC, completer, printer))
 	cmd.AddCommand(newUninstallCmd(uninstallUC, completer, printer))
+	cmd.AddCommand(newGlobalCmd(globalInstallUC, globalUninstallUC, globalCompleter, printer))
 
 	return cmd, nil
 }
