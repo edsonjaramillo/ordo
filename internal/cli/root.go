@@ -6,6 +6,7 @@ import (
 
 	execadapter "ordo/internal/adapters/exec"
 	fsadapter "ordo/internal/adapters/fs"
+	registryadapter "ordo/internal/adapters/registry"
 	"ordo/internal/app"
 	"ordo/internal/cli/completion"
 	"ordo/internal/cli/output"
@@ -23,17 +24,20 @@ func NewRootCmd() (*cobra.Command, error) {
 	indexer := fsadapter.NewWorkspaceIndexer(cwd)
 	discovery := app.NewDiscoveryService(indexer)
 	runner := execadapter.NewRunner()
+	suggestor := registryadapter.NewNPMSuggestor()
 	printer := output.NewPrinter()
-	completer := completion.NewTargetCompleter(discovery)
+	installCompletion := app.NewInstallCompletionService(discovery, suggestor)
+	completer := completion.NewTargetCompleter(discovery, installCompletion)
 
 	runUC := app.NewRunUseCase(discovery, runner)
+	installUC := app.NewInstallUseCase(discovery, runner)
 	uninstallUC := app.NewUninstallUseCase(discovery, runner)
 	var colorFlag string
 	var noLevelFlag bool
 
 	cmd := &cobra.Command{
 		Use:           "ordo",
-		Short:         "Run and uninstall packages/scripts across JS monorepos",
+		Short:         "Run, install, and uninstall packages/scripts across JS monorepos",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -63,6 +67,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	cmd.PersistentFlags().BoolVar(&noLevelFlag, "no-level", false, "Hide output level labels (INFO, OK, WARN, ERROR)")
 
 	cmd.AddCommand(newRunCmd(runUC, completer, printer))
+	cmd.AddCommand(newInstallCmd(installUC, completer, printer))
 	cmd.AddCommand(newUninstallCmd(uninstallUC, completer, printer))
 
 	return cmd, nil

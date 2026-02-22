@@ -121,6 +121,27 @@ func (s Snapshot) PackageTargets(prefix string) []string {
 	return filterAndSort(items, prefix)
 }
 
+func (s Snapshot) WorkspaceKeys(prefix string) []string {
+	items := make([]string, 0, len(s.ByWorkspace))
+	for key := range s.ByWorkspace {
+		items = append(items, key)
+	}
+	return filterAndSort(items, prefix)
+}
+
+func (s Snapshot) DependencyNames(prefix string) []string {
+	items := make([]string, 0)
+	for name := range s.Root.Dependencies {
+		items = append(items, name)
+	}
+	for _, pkg := range s.ByWorkspace {
+		for dep := range pkg.Dependencies {
+			items = append(items, dep)
+		}
+	}
+	return filterAndSort(items, prefix)
+}
+
 func filterAndSort(items []string, prefix string) []string {
 	seen := map[string]struct{}{}
 	out := make([]string, 0, len(items))

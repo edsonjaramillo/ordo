@@ -43,3 +43,18 @@ sudo ORDO_INSTALL_DIR=/usr/local/bin sh /tmp/ordo-install.sh
     - `export PATH="$HOME/.local/bin:$PATH"`
 - Unsupported OS/architecture
   - Only Linux/macOS on `amd64`/`arm64` are supported today.
+
+## Smart dependency install in monorepos
+
+Once `ordo` is installed, you can install dependencies in root or workspace:
+
+```bash
+ordo install zod
+ordo install eslint typescript --dev --exact
+ordo install react --workspace ui
+```
+
+Shell completion support:
+
+- `ordo install <TAB>` suggests package names (registry-aware with local fallback).
+- `ordo install --workspace <TAB>` suggests discovered workspace keys.

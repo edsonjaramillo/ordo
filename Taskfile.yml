@@ -12,6 +12,9 @@ tasks:
   run:
     cmd: go run {{.MAIN}} run {{.CLI_ARGS}}
     silent: true
+  install:
+    cmd: go run {{.MAIN}} install {{.CLI_ARGS}}
+    silent: true
   uninstall:
     cmd: go run {{.MAIN}} uninstall {{.CLI_ARGS}}
     silent: true
