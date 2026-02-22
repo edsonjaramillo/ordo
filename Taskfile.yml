@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# https://taskfile.dev
+version: '3'
+vars:
+  MAIN: cmd/ordo/main.go
+  BIN_DIR: ~/.local/bin
+  EXECUTABLE: ordo
+tasks:
+  default:
+    cmd: go run {{.MAIN}} {{.CLI_ARGS}}
+    silent: true
+  run:
+    cmd: go run {{.MAIN}} run {{.CLI_ARGS}}
+    silent: true
+  uninstall:
+    cmd: go run {{.MAIN}} uninstall {{.CLI_ARGS}}
+    silent: true
+  build:
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - go build -o {{.BIN_DIR}}/{{.EXECUTABLE}} {{.MAIN}}
+    silent: true
+  test:
+    cmd: go test ./...
+    silent: true
+  lint:
+    cmd: golangci-lint run ./...
+    silent: true
+  format:
+    cmds:
+      - if command -v gofumpt >/dev/null 2>&1; then gofumpt -l -w .; else go fmt ./...; fi
+    silent: true
