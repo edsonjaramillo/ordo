@@ -23,17 +23,44 @@ func NewRootCmd() (*cobra.Command, error) {
 	indexer := fsadapter.NewWorkspaceIndexer(cwd)
 	discovery := app.NewDiscoveryService(indexer)
 	runner := execadapter.NewRunner()
-	printer := output.NewPrinter(os.Stderr)
+	printer := output.NewPrinter()
 	completer := completion.NewTargetCompleter(discovery)
 
 	runUC := app.NewRunUseCase(discovery, runner)
 	uninstallUC := app.NewUninstallUseCase(discovery, runner)
+	var colorFlag string
+	var noLevelFlag bool
 
 	cmd := &cobra.Command{
-		Use:          "ordo",
-		Short:        "Run and uninstall packages/scripts across JS monorepos",
-		SilenceUsage: true,
+		Use:           "ordo",
+		Short:         "Run and uninstall packages/scripts across JS monorepos",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			mode, err := output.ParseColorMode(colorFlag)
+			if err != nil {
+				return err
+			}
+
+			showLevel := true
+			noLevelFromEnv, envSet, err := output.ParseNoLevelEnv()
+			if err != nil {
+				return err
+			}
+			if envSet {
+				showLevel = !noLevelFromEnv
+			}
+			if cmd.Flags().Changed("no-level") {
+				showLevel = !noLevelFlag
+			}
+
+			output.SetOutputColorMode(mode)
+			output.SetOutputShowLevel(showLevel)
+			return nil
+		},
 	}
+	cmd.PersistentFlags().StringVar(&colorFlag, "color", "auto", "Colorize output: auto, always, never")
+	cmd.PersistentFlags().BoolVar(&noLevelFlag, "no-level", false, "Hide output level labels (INFO, OK, WARN, ERROR)")
 
 	cmd.AddCommand(newRunCmd(runUC, completer, printer))
 	cmd.AddCommand(newUninstallCmd(uninstallUC, completer, printer))
@@ -44,7 +71,7 @@ func NewRootCmd() (*cobra.Command, error) {
 func Execute() int {
 	cmd, err := NewRootCmd()
 	if err != nil {
-		_, _ = os.Stderr.WriteString("Error: " + err.Error() + "\n")
+		_ = output.PrintRootError(os.Stderr, err)
 		return 1
 	}
 
@@ -57,6 +84,6 @@ func Execute() int {
 	if errors.As(err, &exitErr) {
 		return exitErr.Code
 	}
-	_, _ = os.Stderr.WriteString("Error: " + err.Error() + "\n")
+	_ = output.PrintRootError(os.Stderr, err)
 	return 1
 }

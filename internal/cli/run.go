@@ -22,7 +22,7 @@ func newRunCmd(uc app.RunUseCase, completer completion.TargetCompleter, printer 
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := uc.Run(cmd.Context(), app.RunRequest{Target: args[0], ExtraArgs: trailingArgs(args)})
-			return printer.Handle(err)
+			return printer.Handle(cmd.ErrOrStderr(), err)
 		},
 	}
 	cmd.DisableFlagParsing = false

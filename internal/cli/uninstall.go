@@ -22,7 +22,7 @@ func newUninstallCmd(uc app.UninstallUseCase, completer completion.TargetComplet
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := uc.Run(cmd.Context(), app.UninstallRequest{Target: args[0]})
-			return printer.Handle(err)
+			return printer.Handle(cmd.ErrOrStderr(), err)
 		},
 	}
 }
