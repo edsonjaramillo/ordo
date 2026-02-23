@@ -1,14 +1,52 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://ordo.dev/schema.json",
+	"$id": "https://raw.githubusercontent.com/edsonjaramillo/ordo/refs/heads/main/schema.json",
 	"title": "Ordo Config",
 	"type": "object",
 	"additionalProperties": false,
 	"required": ["defaultPackageManager"],
 	"properties": {
+		"$schema": {
+			"type": "string",
+			"format": "uri-reference"
+		},
 		"defaultPackageManager": {
 			"type": "string",
 			"enum": ["bun", "npm", "pnpm", "yarn"]
+		},
+		"presets": {
+			"type": "object",
+			"default": {},
+			"additionalProperties": {
+				"type": "object",
+				"additionalProperties": false,
+				"properties": {
+					"dependencies": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"devDependencies": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"peerDependencies": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"optionalDependencies": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				}
+			}
 		}
 	}
 }

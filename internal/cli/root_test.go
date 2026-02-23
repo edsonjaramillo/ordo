@@ -158,6 +158,18 @@ func TestRootRegistersInitCommand(t *testing.T) {
 	}
 }
 
+func TestRootRegistersPresetCommand(t *testing.T) {
+	cmd, _ := newTestRootCmd(t)
+
+	presetCmd, _, err := cmd.Find([]string{"preset"})
+	if err != nil {
+		t.Fatalf("Find(preset) error = %v", err)
+	}
+	if presetCmd == nil || presetCmd.Name() != "preset" {
+		t.Fatalf("expected preset command, got %#v", presetCmd)
+	}
+}
+
 func TestInitRequiresDefaultPackageManagerFlag(t *testing.T) {
 	cmd, _ := newTestRootCmd(t)
 	cmd.SetArgs([]string{"init"})

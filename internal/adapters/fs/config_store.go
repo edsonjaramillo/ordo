@@ -23,6 +23,10 @@ func (c ConfigStore) Exists(path string) (bool, error) {
 	return false, err
 }
 
+func (c ConfigStore) ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
 func (c ConfigStore) WriteFile(path string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(path, data, perm)
 }

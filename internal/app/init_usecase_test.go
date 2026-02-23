@@ -30,8 +30,8 @@ func TestInitUseCaseWritesConfigInXDGConfigHome(t *testing.T) {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
 
-	if got := string(content); got != "{\n  \"defaultPackageManager\": \"pnpm\"\n}\n" {
-		t.Fatalf("config content = %q, want JSON with defaultPackageManager", got)
+	if got := string(content); got != "{\n  \"$schema\": \"https://raw.githubusercontent.com/edsonjaramillo/ordo/refs/heads/main/schema.json\",\n  \"defaultPackageManager\": \"pnpm\"\n}\n" {
+		t.Fatalf("config content = %q, want JSON with $schema and defaultPackageManager", got)
 	}
 }
 

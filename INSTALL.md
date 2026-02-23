@@ -54,6 +54,8 @@ ordo install eslint typescript --dev --exact
 ordo install react --workspace ui
 ordo update react
 ordo update ui/clsx
+ordo preset prettier devDependencies
+ordo preset prettier devDependencies prettier-plugin-tailwindcss --workspace ui
 ```
 
 Global package management:
@@ -76,3 +78,7 @@ Shell completion support:
 - `ordo global uninstall <TAB>` suggests package managers first, then installed global package names for the selected manager.
 - `ordo update <TAB>` suggests installed dependency targets.
 - `ordo global update <TAB>` suggests package managers first, then installed global package names for the selected manager.
+- `ordo preset <TAB>` suggests preset names from `ordo.json`.
+- `ordo preset <preset> <TAB>` suggests preset buckets that have packages.
+- `ordo preset <preset> <bucket> <TAB>` suggests package names for that preset bucket.
+- `ordo preset --workspace <TAB>` suggests discovered workspace keys.

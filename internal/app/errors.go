@@ -9,10 +9,14 @@ import (
 )
 
 var (
-	ErrWorkspaceNotFound   = errors.New("workspace not found")
-	ErrScriptNotFound      = errors.New("script not found")
-	ErrPackageNotFound     = errors.New("package not found")
-	ErrConfigAlreadyExists = errors.New("ordo config already exists")
+	ErrWorkspaceNotFound     = errors.New("workspace not found")
+	ErrScriptNotFound        = errors.New("script not found")
+	ErrPackageNotFound       = errors.New("package not found")
+	ErrConfigAlreadyExists   = errors.New("ordo config already exists")
+	ErrConfigNotFound        = errors.New("ordo config not found")
+	ErrPresetNotFound        = errors.New("preset not found")
+	ErrPresetBucketNotFound  = errors.New("preset bucket not found")
+	ErrPresetPackageNotFound = errors.New("preset package not found")
 )
 
 type GlobalPackageMissingError struct {

@@ -26,10 +26,13 @@ func NewRootCmd() (*cobra.Command, error) {
 	runner := execadapter.NewRunner()
 	suggestor := registryadapter.NewNPMSuggestor()
 	printer := output.NewPrinter()
+	configStore := fsadapter.NewConfigStore()
 	installCompletion := app.NewInstallCompletionService(discovery, suggestor)
 	completer := completion.NewTargetCompleter(discovery, installCompletion)
 	globalCompletion := app.NewGlobalCompletionService(installCompletion, runner)
 	globalCompleter := completion.NewGlobalCompleter(globalCompletion)
+	presetCompletion := app.NewPresetCompletionService(configStore)
+	presetCompleter := completion.NewPresetCompleter(presetCompletion)
 
 	runUC := app.NewRunUseCase(discovery, runner)
 	installUC := app.NewInstallUseCase(discovery, runner)
@@ -38,8 +41,8 @@ func NewRootCmd() (*cobra.Command, error) {
 	globalInstallUC := app.NewGlobalInstallUseCase(runner)
 	globalUninstallUC := app.NewGlobalUninstallUseCase(runner, runner)
 	globalUpdateUC := app.NewGlobalUpdateUseCase(runner)
-	configStore := fsadapter.NewConfigStore()
 	initUC := app.NewInitUseCase(configStore)
+	presetUC := app.NewPresetUseCase(discovery, runner, configStore)
 	var colorFlag string
 	var noLevelFlag bool
 
@@ -80,6 +83,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	cmd.AddCommand(newUpdateCmd(updateUC, completer, printer))
 	cmd.AddCommand(newGlobalCmd(globalInstallUC, globalUninstallUC, globalUpdateUC, globalCompleter, printer))
 	cmd.AddCommand(newInitCmd(initUC, printer))
+	cmd.AddCommand(newPresetCmd(presetUC, presetCompleter, completer, printer))
 
 	return cmd, nil
 }

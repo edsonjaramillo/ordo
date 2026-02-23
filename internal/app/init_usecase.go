@@ -18,6 +18,13 @@ type InitUseCase struct {
 	configStore ports.ConfigStore
 }
 
+const initConfigSchemaURL = "https://raw.githubusercontent.com/edsonjaramillo/ordo/refs/heads/main/schema.json"
+
+type initConfigPayload struct {
+	Schema                string `json:"$schema"`
+	DefaultPackageManager string `json:"defaultPackageManager"`
+}
+
 func NewInitUseCase(configStore ports.ConfigStore) InitUseCase {
 	return InitUseCase{configStore: configStore}
 }
@@ -49,8 +56,9 @@ func (u InitUseCase) Run(_ context.Context, req InitRequest) error {
 		return err
 	}
 
-	payload, err := json.MarshalIndent(map[string]string{
-		"defaultPackageManager": string(manager),
+	payload, err := json.MarshalIndent(initConfigPayload{
+		Schema:                initConfigSchemaURL,
+		DefaultPackageManager: string(manager),
 	}, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
