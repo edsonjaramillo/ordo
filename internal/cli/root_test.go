@@ -124,6 +124,26 @@ func TestRootRegistersGlobalSubcommands(t *testing.T) {
 	if uninstallCmd == nil || uninstallCmd.Name() != "uninstall" {
 		t.Fatalf("expected global uninstall command, got %#v", uninstallCmd)
 	}
+
+	updateCmd, _, err := cmd.Find([]string{"global", "update"})
+	if err != nil {
+		t.Fatalf("Find(global update) error = %v", err)
+	}
+	if updateCmd == nil || updateCmd.Name() != "update" {
+		t.Fatalf("expected global update command, got %#v", updateCmd)
+	}
+}
+
+func TestRootRegistersUpdateCommand(t *testing.T) {
+	cmd, _ := newTestRootCmd(t)
+
+	updateCmd, _, err := cmd.Find([]string{"update"})
+	if err != nil {
+		t.Fatalf("Find(update) error = %v", err)
+	}
+	if updateCmd == nil || updateCmd.Name() != "update" {
+		t.Fatalf("expected update command, got %#v", updateCmd)
+	}
 }
 
 func TestGlobalInstallRequiresManagerArg(t *testing.T) {
@@ -149,5 +169,18 @@ func TestGlobalUninstallRejectsUnsupportedManager(t *testing.T) {
 	}
 	if got := buf.String(); !strings.Contains(got, "unsupported package manager") {
 		t.Fatalf("output = %q, want unsupported package manager message", got)
+	}
+}
+
+func TestGlobalUpdateRequiresManagerArg(t *testing.T) {
+	cmd, _ := newTestRootCmd(t)
+	cmd.SetArgs([]string{"global", "update", "typescript"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("Execute() error = nil, want non-nil")
+	}
+	if !strings.Contains(err.Error(), "at least 2 arg(s)") {
+		t.Fatalf("error = %q, want arg count message", err.Error())
 	}
 }

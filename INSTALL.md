@@ -52,6 +52,8 @@ Once `ordo` is installed, you can install dependencies in root or workspace:
 ordo install zod
 ordo install eslint typescript --dev --exact
 ordo install react --workspace ui
+ordo update react
+ordo update ui/clsx
 ```
 
 Global package management:
@@ -59,6 +61,7 @@ Global package management:
 ```bash
 ordo global install pnpm typescript
 ordo global uninstall pnpm typescript
+ordo global update pnpm typescript
 ```
 
 Global store lookup notes:
@@ -71,3 +74,5 @@ Shell completion support:
 - `ordo install --workspace <TAB>` suggests discovered workspace keys.
 - `ordo global install <TAB>` suggests package managers first, then package names.
 - `ordo global uninstall <TAB>` suggests package managers first, then installed global package names for the selected manager.
+- `ordo update <TAB>` suggests installed dependency targets.
+- `ordo global update <TAB>` suggests package managers first, then installed global package names for the selected manager.

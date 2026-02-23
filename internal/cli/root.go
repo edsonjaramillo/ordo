@@ -34,14 +34,16 @@ func NewRootCmd() (*cobra.Command, error) {
 	runUC := app.NewRunUseCase(discovery, runner)
 	installUC := app.NewInstallUseCase(discovery, runner)
 	uninstallUC := app.NewUninstallUseCase(discovery, runner)
+	updateUC := app.NewUpdateUseCase(discovery, runner)
 	globalInstallUC := app.NewGlobalInstallUseCase(runner)
 	globalUninstallUC := app.NewGlobalUninstallUseCase(runner, runner)
+	globalUpdateUC := app.NewGlobalUpdateUseCase(runner)
 	var colorFlag string
 	var noLevelFlag bool
 
 	cmd := &cobra.Command{
 		Use:           "ordo",
-		Short:         "Run, install, and uninstall packages/scripts across JS monorepos",
+		Short:         "Run, install, uninstall, and update packages/scripts across JS monorepos",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -73,7 +75,8 @@ func NewRootCmd() (*cobra.Command, error) {
 	cmd.AddCommand(newRunCmd(runUC, completer, printer))
 	cmd.AddCommand(newInstallCmd(installUC, completer, printer))
 	cmd.AddCommand(newUninstallCmd(uninstallUC, completer, printer))
-	cmd.AddCommand(newGlobalCmd(globalInstallUC, globalUninstallUC, globalCompleter, printer))
+	cmd.AddCommand(newUpdateCmd(updateUC, completer, printer))
+	cmd.AddCommand(newGlobalCmd(globalInstallUC, globalUninstallUC, globalUpdateUC, globalCompleter, printer))
 
 	return cmd, nil
 }

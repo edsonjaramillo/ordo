@@ -87,6 +87,35 @@ func TestUninstallUseCasePackageMissing(t *testing.T) {
 	}
 }
 
+func TestUpdateUseCaseRoot(t *testing.T) {
+	runner := &fakeRunner{}
+	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
+	uc := NewUpdateUseCase(discovery, runner)
+
+	err := uc.Run(context.Background(), UpdateRequest{Target: "react"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if runner.dir != "." {
+		t.Fatalf("expected root dir '.', got %s", runner.dir)
+	}
+	if len(runner.argv) != 3 || runner.argv[0] != "pnpm" || runner.argv[1] != "update" || runner.argv[2] != "react" {
+		t.Fatalf("unexpected argv: %#v", runner.argv)
+	}
+}
+
+func TestUpdateUseCasePackageMissing(t *testing.T) {
+	runner := &fakeRunner{}
+	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
+	uc := NewUpdateUseCase(discovery, runner)
+
+	err := uc.Run(context.Background(), UpdateRequest{Target: "ui/left-pad"})
+	if !errors.Is(err, ErrPackageNotFound) {
+		t.Fatalf("expected ErrPackageNotFound, got %v", err)
+	}
+}
+
 func TestSnapshotWorkspaceCollision(t *testing.T) {
 	discovery := NewDiscoveryService(fakeIndexer{infos: []domain.PackageInfo{
 		{Dir: "."},

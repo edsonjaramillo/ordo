@@ -95,6 +95,25 @@ func BuildUninstallCommand(manager PackageManager, pkg string) ([]string, error)
 	}
 }
 
+func BuildUpdateCommand(manager PackageManager, pkg string) ([]string, error) {
+	if pkg == "" {
+		return nil, fmt.Errorf("package cannot be empty")
+	}
+
+	switch manager {
+	case ManagerNPM:
+		return []string{"npm", "update", pkg}, nil
+	case ManagerPNPM:
+		return []string{"pnpm", "update", pkg}, nil
+	case ManagerYarn:
+		return []string{"yarn", "upgrade", pkg}, nil
+	case ManagerBun:
+		return []string{"bun", "update", pkg}, nil
+	default:
+		return nil, fmt.Errorf("unsupported package manager: %s", manager)
+	}
+}
+
 type InstallOptions struct {
 	Dev      bool
 	Peer     bool
@@ -249,6 +268,28 @@ func BuildGlobalUninstallCommand(manager PackageManager, pkgs []string) ([]strin
 		cmd = []string{"yarn", "global", "remove"}
 	case ManagerBun:
 		cmd = []string{"bun", "remove", "--global"}
+	default:
+		return nil, fmt.Errorf("unsupported package manager: %s", manager)
+	}
+
+	return append(cmd, pkgs...), nil
+}
+
+func BuildGlobalUpdateCommand(manager PackageManager, pkgs []string) ([]string, error) {
+	if err := validatePackages(pkgs); err != nil {
+		return nil, err
+	}
+
+	var cmd []string
+	switch manager {
+	case ManagerNPM:
+		cmd = []string{"npm", "update", "--global"}
+	case ManagerPNPM:
+		cmd = []string{"pnpm", "update", "--global"}
+	case ManagerYarn:
+		cmd = []string{"yarn", "global", "upgrade"}
+	case ManagerBun:
+		cmd = []string{"bun", "update", "--global"}
 	default:
 		return nil, fmt.Errorf("unsupported package manager: %s", manager)
 	}

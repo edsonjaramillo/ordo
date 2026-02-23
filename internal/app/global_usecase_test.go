@@ -81,6 +81,32 @@ func TestGlobalUninstallUseCase(t *testing.T) {
 	}
 }
 
+func TestGlobalUpdateUseCase(t *testing.T) {
+	runner := &fakeRunner{}
+	uc := NewGlobalUpdateUseCase(runner)
+
+	err := uc.Run(context.Background(), GlobalUpdateRequest{
+		Manager:  domain.ManagerPNPM,
+		Packages: []string{"typescript"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if runner.dir != "." {
+		t.Fatalf("expected root dir '.', got %s", runner.dir)
+	}
+	want := []string{"pnpm", "update", "--global", "typescript"}
+	if len(runner.argv) != len(want) {
+		t.Fatalf("unexpected argv len: %#v", runner.argv)
+	}
+	for i := range want {
+		if runner.argv[i] != want[i] {
+			t.Fatalf("argv[%d] = %q, want %q", i, runner.argv[i], want[i])
+		}
+	}
+}
+
 func TestGlobalUninstallUseCasePackageMissing(t *testing.T) {
 	runner := &fakeRunner{}
 	lister := fakeGlobalLister{

@@ -11,6 +11,7 @@ import (
 func newGlobalCmd(
 	installUC app.GlobalInstallUseCase,
 	uninstallUC app.GlobalUninstallUseCase,
+	updateUC app.GlobalUpdateUseCase,
 	completer completion.GlobalCompleter,
 	printer output.Printer,
 ) *cobra.Command {
@@ -21,6 +22,7 @@ func newGlobalCmd(
 
 	cmd.AddCommand(newGlobalInstallCmd(installUC, completer, printer))
 	cmd.AddCommand(newGlobalUninstallCmd(uninstallUC, completer, printer))
+	cmd.AddCommand(newGlobalUpdateCmd(updateUC, completer, printer))
 
 	return cmd
 }
