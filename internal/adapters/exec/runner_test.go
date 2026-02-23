@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"ordo/internal/domain"
@@ -84,5 +85,53 @@ func TestResolveGlobalStorePathsBunFromEnv(t *testing.T) {
 	want := filepath.Clean("/tmp/custom-bun/install/global/node_modules")
 	if len(paths) != 1 || paths[0] != want {
 		t.Fatalf("paths = %#v, want [%q]", paths, want)
+	}
+}
+
+func TestAvailablePackageManagers(t *testing.T) {
+	pathDir := t.TempDir()
+	writeExecutable(t, pathDir, "npm")
+	writeExecutable(t, pathDir, "bun")
+	t.Setenv("PATH", pathDir)
+
+	r := NewRunner()
+	items, err := r.AvailablePackageManagers(context.Background())
+	if err != nil {
+		t.Fatalf("AvailablePackageManagers() error = %v", err)
+	}
+
+	if len(items) != 2 || items[0] != "bun" || items[1] != "npm" {
+		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func TestAvailablePackageManagersNoneFound(t *testing.T) {
+	pathDir := t.TempDir()
+	t.Setenv("PATH", pathDir)
+
+	r := NewRunner()
+	items, err := r.AvailablePackageManagers(context.Background())
+	if err != nil {
+		t.Fatalf("AvailablePackageManagers() error = %v", err)
+	}
+
+	if len(items) != 0 {
+		t.Fatalf("expected empty items, got %#v", items)
+	}
+}
+
+func writeExecutable(t *testing.T, dir string, name string) {
+	t.Helper()
+
+	filename := name
+	content := "#!/bin/sh\nexit 0\n"
+	mode := os.FileMode(0o755)
+	if runtime.GOOS == "windows" {
+		filename += ".exe"
+		content = ""
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), mode); err != nil {
+		t.Fatalf("write executable %q: %v", filename, err)
 	}
 }

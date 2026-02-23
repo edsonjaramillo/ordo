@@ -74,10 +74,11 @@ Shell completion support:
 
 - `ordo install <TAB>` suggests package names (registry-aware with local fallback).
 - `ordo install --workspace <TAB>` suggests discovered workspace keys.
-- `ordo global install <TAB>` suggests package managers first, then package names.
-- `ordo global uninstall <TAB>` suggests package managers first, then installed global package names for the selected manager.
+- `ordo global install <TAB>` suggests package managers found on `PATH` first (falls back to all supported managers if none are detected), then package names.
+- `ordo global uninstall <TAB>` suggests package managers found on `PATH` first (falls back to all supported managers if none are detected), then installed global package names for the selected manager.
 - `ordo update <TAB>` suggests installed dependency targets.
-- `ordo global update <TAB>` suggests package managers first, then installed global package names for the selected manager.
+- `ordo global update <TAB>` suggests package managers found on `PATH` first (falls back to all supported managers if none are detected), then installed global package names for the selected manager.
+- `ordo init --defaultPackageManager <TAB>` suggests package managers found on `PATH` (falls back to all supported managers if none are detected).
 - `ordo preset <TAB>` suggests preset names from `ordo.json`.
 - `ordo preset <preset> <TAB>` suggests preset buckets that have packages.
 - `ordo preset <preset> <bucket> <TAB>` suggests package names for that preset bucket.

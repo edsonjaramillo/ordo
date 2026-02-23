@@ -19,6 +19,10 @@ func (c GlobalCompleter) InstallPackages(ctx context.Context, prefix string) ([]
 	return c.global.InstallPackageSpecs(ctx, prefix)
 }
 
+func (c GlobalCompleter) AvailablePackageManagers(ctx context.Context, prefix string) ([]string, error) {
+	return c.global.AvailablePackageManagers(ctx, prefix)
+}
+
 func (c GlobalCompleter) InstalledGlobalPackages(ctx context.Context, manager domain.PackageManager, prefix string) ([]string, error) {
 	return c.global.InstalledGlobalPackages(ctx, manager, prefix)
 }

@@ -37,6 +37,17 @@ func (r Runner) Run(ctx context.Context, dir string, argv []string) error {
 	return nil
 }
 
+func (r Runner) AvailablePackageManagers(_ context.Context) ([]string, error) {
+	found := make([]string, 0, len(domain.SupportedPackageManagers()))
+	for _, manager := range domain.SupportedPackageManagers() {
+		if _, err := exec.LookPath(manager); err == nil {
+			found = append(found, manager)
+		}
+	}
+	sort.Strings(found)
+	return found, nil
+}
+
 func (r Runner) ListInstalledGlobalPackages(ctx context.Context, manager domain.PackageManager) ([]string, error) {
 	paths, err := r.ResolveGlobalStorePaths(ctx, manager)
 	if err != nil {

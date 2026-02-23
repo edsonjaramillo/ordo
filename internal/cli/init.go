@@ -2,13 +2,13 @@ package cli
 
 import (
 	"ordo/internal/app"
+	"ordo/internal/cli/completion"
 	"ordo/internal/cli/output"
-	"ordo/internal/domain"
 
 	"github.com/spf13/cobra"
 )
 
-func newInitCmd(uc app.InitUseCase, printer output.Printer) *cobra.Command {
+func newInitCmd(uc app.InitUseCase, completer completion.GlobalCompleter, printer output.Printer) *cobra.Command {
 	var defaultPackageManager string
 
 	cmd := &cobra.Command{
@@ -22,8 +22,12 @@ func newInitCmd(uc app.InitUseCase, printer output.Printer) *cobra.Command {
 
 	cmd.Flags().StringVar(&defaultPackageManager, "defaultPackageManager", "", "Default package manager for generated config (bun, npm, pnpm, yarn)")
 	_ = cmd.MarkFlagRequired("defaultPackageManager")
-	_ = cmd.RegisterFlagCompletionFunc("defaultPackageManager", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-		return domain.SupportedPackageManagers(), cobra.ShellCompDirectiveNoFileComp
+	_ = cmd.RegisterFlagCompletionFunc("defaultPackageManager", func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		items, err := completer.AvailablePackageManagers(cmd.Context(), toComplete)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+		return items, cobra.ShellCompDirectiveNoFileComp
 	})
 
 	return cmd

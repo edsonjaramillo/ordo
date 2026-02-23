@@ -12,15 +12,18 @@ import (
 type GlobalCompletionService struct {
 	installCompletion InstallCompletionService
 	lister            ports.GlobalPackageLister
+	availability      ports.PackageManagerAvailability
 }
 
 func NewGlobalCompletionService(
 	installCompletion InstallCompletionService,
 	lister ports.GlobalPackageLister,
+	availability ports.PackageManagerAvailability,
 ) GlobalCompletionService {
 	return GlobalCompletionService{
 		installCompletion: installCompletion,
 		lister:            lister,
+		availability:      availability,
 	}
 }
 
@@ -36,6 +39,19 @@ func (s GlobalCompletionService) InstalledGlobalPackages(ctx context.Context, ma
 	items, err := s.lister.ListInstalledGlobalPackages(ctx, manager)
 	if err != nil {
 		return []string{}, nil
+	}
+
+	return filterPrefixAndSort(items, prefix), nil
+}
+
+func (s GlobalCompletionService) AvailablePackageManagers(ctx context.Context, prefix string) ([]string, error) {
+	if s.availability == nil {
+		return filterPrefixAndSort(domain.SupportedPackageManagers(), prefix), nil
+	}
+
+	items, err := s.availability.AvailablePackageManagers(ctx)
+	if err != nil || len(items) == 0 {
+		return filterPrefixAndSort(domain.SupportedPackageManagers(), prefix), nil
 	}
 
 	return filterPrefixAndSort(items, prefix), nil

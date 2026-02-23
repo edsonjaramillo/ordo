@@ -14,6 +14,11 @@ type fakeGlobalLister struct {
 	err   error
 }
 
+type fakePackageManagerAvailability struct {
+	items []string
+	err   error
+}
+
 func (f fakeGlobalLister) ListInstalledGlobalPackages(context.Context, domain.PackageManager) ([]string, error) {
 	if f.err != nil {
 		return nil, f.err
@@ -26,6 +31,13 @@ func (f fakeGlobalLister) ResolveGlobalStorePaths(context.Context, domain.Packag
 		return nil, f.err
 	}
 	return append([]string(nil), f.paths...), nil
+}
+
+func (f fakePackageManagerAvailability) AvailablePackageManagers(context.Context) ([]string, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return append([]string(nil), f.items...), nil
 }
 
 func TestGlobalInstallUseCase(t *testing.T) {
@@ -144,7 +156,7 @@ func TestGlobalUninstallUseCasePackageMissing(t *testing.T) {
 func TestGlobalCompletionServiceInstalledGlobalPackages(t *testing.T) {
 	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
 	installCompletion := NewInstallCompletionService(discovery, nil)
-	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{items: []string{"eslint", "typescript", "eslint"}})
+	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{items: []string{"eslint", "typescript", "eslint"}}, nil)
 
 	items, err := svc.InstalledGlobalPackages(context.Background(), domain.ManagerPNPM, "e")
 	if err != nil {
@@ -158,7 +170,7 @@ func TestGlobalCompletionServiceInstalledGlobalPackages(t *testing.T) {
 func TestGlobalCompletionServiceInstalledGlobalPackagesFallback(t *testing.T) {
 	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
 	installCompletion := NewInstallCompletionService(discovery, nil)
-	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{err: errors.New("boom")})
+	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{err: errors.New("boom")}, nil)
 
 	items, err := svc.InstalledGlobalPackages(context.Background(), domain.ManagerPNPM, "")
 	if err != nil {
@@ -172,13 +184,61 @@ func TestGlobalCompletionServiceInstalledGlobalPackagesFallback(t *testing.T) {
 func TestGlobalCompletionServiceInstallPackageSpecs(t *testing.T) {
 	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
 	installCompletion := NewInstallCompletionService(discovery, fakeSuggestor{items: []string{"react-dom", "react"}})
-	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{})
+	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{}, nil)
 
 	items, err := svc.InstallPackageSpecs(context.Background(), "react")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(items) != 2 || items[0] != "react" || items[1] != "react-dom" {
+		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func TestGlobalCompletionServiceAvailablePackageManagers(t *testing.T) {
+	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
+	installCompletion := NewInstallCompletionService(discovery, nil)
+	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{}, fakePackageManagerAvailability{items: []string{"pnpm", "npm"}})
+
+	items, err := svc.AvailablePackageManagers(context.Background(), "n")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(items) != 1 || items[0] != "npm" {
+		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func TestGlobalCompletionServiceAvailablePackageManagersFallbackWhenEmpty(t *testing.T) {
+	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
+	installCompletion := NewInstallCompletionService(discovery, nil)
+	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{}, fakePackageManagerAvailability{items: nil})
+
+	items, err := svc.AvailablePackageManagers(context.Background(), "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []string{"bun", "npm", "pnpm", "yarn"}
+	if len(items) != len(want) {
+		t.Fatalf("unexpected items len: %#v", items)
+	}
+	for i := range want {
+		if items[i] != want[i] {
+			t.Fatalf("items[%d] = %q, want %q", i, items[i], want[i])
+		}
+	}
+}
+
+func TestGlobalCompletionServiceAvailablePackageManagersFallbackWhenError(t *testing.T) {
+	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
+	installCompletion := NewInstallCompletionService(discovery, nil)
+	svc := NewGlobalCompletionService(installCompletion, fakeGlobalLister{}, fakePackageManagerAvailability{err: errors.New("boom")})
+
+	items, err := svc.AvailablePackageManagers(context.Background(), "p")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(items) != 1 || items[0] != "pnpm" {
 		t.Fatalf("unexpected items: %#v", items)
 	}
 }

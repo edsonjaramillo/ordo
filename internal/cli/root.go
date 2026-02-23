@@ -29,7 +29,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	configStore := fsadapter.NewConfigStore()
 	installCompletion := app.NewInstallCompletionService(discovery, suggestor)
 	completer := completion.NewTargetCompleter(discovery, installCompletion)
-	globalCompletion := app.NewGlobalCompletionService(installCompletion, runner)
+	globalCompletion := app.NewGlobalCompletionService(installCompletion, runner, runner)
 	globalCompleter := completion.NewGlobalCompleter(globalCompletion)
 	presetCompletion := app.NewPresetCompletionService(configStore)
 	presetCompleter := completion.NewPresetCompleter(presetCompletion)
@@ -82,7 +82,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	cmd.AddCommand(newUninstallCmd(uninstallUC, completer, printer))
 	cmd.AddCommand(newUpdateCmd(updateUC, completer, printer))
 	cmd.AddCommand(newGlobalCmd(globalInstallUC, globalUninstallUC, globalUpdateUC, globalCompleter, printer))
-	cmd.AddCommand(newInitCmd(initUC, printer))
+	cmd.AddCommand(newInitCmd(initUC, globalCompleter, printer))
 	cmd.AddCommand(newPresetCmd(presetUC, presetCompleter, completer, printer))
 
 	return cmd, nil

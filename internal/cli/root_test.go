@@ -2,6 +2,9 @@ package cli
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -219,5 +222,89 @@ func TestGlobalUpdateRequiresManagerArg(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "at least 2 arg(s)") {
 		t.Fatalf("error = %q, want arg count message", err.Error())
+	}
+}
+
+func TestGlobalInstallCompletionUsesPathAvailableManagers(t *testing.T) {
+	pathDir := t.TempDir()
+	writeTestExecutable(t, pathDir, "npm")
+	t.Setenv("PATH", pathDir)
+
+	cmd, _ := newTestRootCmd(t)
+	installCmd, _, err := cmd.Find([]string{"global", "install"})
+	if err != nil {
+		t.Fatalf("Find(global install) error = %v", err)
+	}
+
+	items, dir := installCmd.ValidArgsFunction(installCmd, []string{}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+	if len(items) != 1 || items[0] != "npm" {
+		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func TestGlobalInstallCompletionFallsBackWhenNoManagersOnPath(t *testing.T) {
+	pathDir := t.TempDir()
+	t.Setenv("PATH", pathDir)
+
+	cmd, _ := newTestRootCmd(t)
+	installCmd, _, err := cmd.Find([]string{"global", "install"})
+	if err != nil {
+		t.Fatalf("Find(global install) error = %v", err)
+	}
+
+	items, _ := installCmd.ValidArgsFunction(installCmd, []string{}, "")
+	want := []string{"bun", "npm", "pnpm", "yarn"}
+	if len(items) != len(want) {
+		t.Fatalf("unexpected items len: %#v", items)
+	}
+	for i := range want {
+		if items[i] != want[i] {
+			t.Fatalf("items[%d] = %q, want %q", i, items[i], want[i])
+		}
+	}
+}
+
+func TestInitDefaultPackageManagerCompletionUsesPathAvailableManagers(t *testing.T) {
+	pathDir := t.TempDir()
+	writeTestExecutable(t, pathDir, "pnpm")
+	writeTestExecutable(t, pathDir, "yarn")
+	t.Setenv("PATH", pathDir)
+
+	cmd, _ := newTestRootCmd(t)
+	initCmd, _, err := cmd.Find([]string{"init"})
+	if err != nil {
+		t.Fatalf("Find(init) error = %v", err)
+	}
+
+	fn, ok := initCmd.GetFlagCompletionFunc("defaultPackageManager")
+	if !ok {
+		t.Fatal("expected completion function for defaultPackageManager")
+	}
+
+	items, dir := fn(initCmd, []string{}, "y")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+	if len(items) != 1 || items[0] != "yarn" {
+		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func writeTestExecutable(t *testing.T, dir string, name string) {
+	t.Helper()
+
+	filename := name
+	content := "#!/bin/sh\nexit 0\n"
+	mode := os.FileMode(0o755)
+	if runtime.GOOS == "windows" {
+		filename += ".exe"
+		content = ""
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), mode); err != nil {
+		t.Fatalf("write executable %q: %v", filename, err)
 	}
 }

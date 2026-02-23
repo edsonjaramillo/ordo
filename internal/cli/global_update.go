@@ -16,7 +16,11 @@ func newGlobalUpdateCmd(uc app.GlobalUpdateUseCase, completer completion.GlobalC
 		Args:  cobra.MinimumNArgs(2),
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			if len(args) == 0 {
-				return domain.SupportedPackageManagers(), cobra.ShellCompDirectiveNoFileComp
+				items, err := completer.AvailablePackageManagers(cmd.Context(), toComplete)
+				if err != nil {
+					return nil, cobra.ShellCompDirectiveError
+				}
+				return items, cobra.ShellCompDirectiveNoFileComp
 			}
 			manager, err := domain.ParsePackageManager(args[0])
 			if err != nil {
