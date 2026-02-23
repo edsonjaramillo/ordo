@@ -146,6 +146,31 @@ func TestRootRegistersUpdateCommand(t *testing.T) {
 	}
 }
 
+func TestRootRegistersInitCommand(t *testing.T) {
+	cmd, _ := newTestRootCmd(t)
+
+	initCmd, _, err := cmd.Find([]string{"init"})
+	if err != nil {
+		t.Fatalf("Find(init) error = %v", err)
+	}
+	if initCmd == nil || initCmd.Name() != "init" {
+		t.Fatalf("expected init command, got %#v", initCmd)
+	}
+}
+
+func TestInitRequiresDefaultPackageManagerFlag(t *testing.T) {
+	cmd, _ := newTestRootCmd(t)
+	cmd.SetArgs([]string{"init"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("Execute() error = nil, want non-nil")
+	}
+	if !strings.Contains(err.Error(), `required flag(s) "defaultPackageManager" not set`) {
+		t.Fatalf("error = %q, want required defaultPackageManager flag message", err.Error())
+	}
+}
+
 func TestGlobalInstallRequiresManagerArg(t *testing.T) {
 	cmd, _ := newTestRootCmd(t)
 	cmd.SetArgs([]string{"global", "install", "typescript"})

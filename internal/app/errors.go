@@ -9,9 +9,10 @@ import (
 )
 
 var (
-	ErrWorkspaceNotFound = errors.New("workspace not found")
-	ErrScriptNotFound    = errors.New("script not found")
-	ErrPackageNotFound   = errors.New("package not found")
+	ErrWorkspaceNotFound   = errors.New("workspace not found")
+	ErrScriptNotFound      = errors.New("script not found")
+	ErrPackageNotFound     = errors.New("package not found")
+	ErrConfigAlreadyExists = errors.New("ordo config already exists")
 )
 
 type GlobalPackageMissingError struct {

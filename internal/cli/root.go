@@ -38,6 +38,8 @@ func NewRootCmd() (*cobra.Command, error) {
 	globalInstallUC := app.NewGlobalInstallUseCase(runner)
 	globalUninstallUC := app.NewGlobalUninstallUseCase(runner, runner)
 	globalUpdateUC := app.NewGlobalUpdateUseCase(runner)
+	configStore := fsadapter.NewConfigStore()
+	initUC := app.NewInitUseCase(configStore)
 	var colorFlag string
 	var noLevelFlag bool
 
@@ -77,6 +79,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	cmd.AddCommand(newUninstallCmd(uninstallUC, completer, printer))
 	cmd.AddCommand(newUpdateCmd(updateUC, completer, printer))
 	cmd.AddCommand(newGlobalCmd(globalInstallUC, globalUninstallUC, globalUpdateUC, globalCompleter, printer))
+	cmd.AddCommand(newInitCmd(initUC, printer))
 
 	return cmd, nil
 }
