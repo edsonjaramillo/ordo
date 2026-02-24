@@ -173,6 +173,70 @@ func TestRootRegistersPresetCommand(t *testing.T) {
 	}
 }
 
+func TestRootRegistersCatalogCommand(t *testing.T) {
+	cmd, _ := newTestRootCmd(t)
+
+	catalogCmd, _, err := cmd.Find([]string{"catalog"})
+	if err != nil {
+		t.Fatalf("Find(catalog) error = %v", err)
+	}
+	if catalogCmd == nil || catalogCmd.Name() != "catalog" {
+		t.Fatalf("expected catalog command, got %#v", catalogCmd)
+	}
+
+	addCmd, _, err := cmd.Find([]string{"catalog", "add"})
+	if err != nil {
+		t.Fatalf("Find(catalog add) error = %v", err)
+	}
+	if addCmd == nil || addCmd.Name() != "add" {
+		t.Fatalf("expected catalog add command, got %#v", addCmd)
+	}
+
+	removeCmd, _, err := cmd.Find([]string{"catalog", "remove"})
+	if err != nil {
+		t.Fatalf("Find(catalog remove) error = %v", err)
+	}
+	if removeCmd == nil || removeCmd.Name() != "remove" {
+		t.Fatalf("expected catalog remove command, got %#v", removeCmd)
+	}
+
+	syncCmd, _, err := cmd.Find([]string{"catalog", "sync"})
+	if err != nil {
+		t.Fatalf("Find(catalog sync) error = %v", err)
+	}
+	if syncCmd == nil || syncCmd.Name() != "sync" {
+		t.Fatalf("expected catalog sync command, got %#v", syncCmd)
+	}
+}
+
+func TestRootRegistersCatalogsCommand(t *testing.T) {
+	cmd, _ := newTestRootCmd(t)
+
+	catalogsCmd, _, err := cmd.Find([]string{"catalogs"})
+	if err != nil {
+		t.Fatalf("Find(catalogs) error = %v", err)
+	}
+	if catalogsCmd == nil || catalogsCmd.Name() != "catalogs" {
+		t.Fatalf("expected catalogs command, got %#v", catalogsCmd)
+	}
+
+	addCmd, _, err := cmd.Find([]string{"catalogs", "add"})
+	if err != nil {
+		t.Fatalf("Find(catalogs add) error = %v", err)
+	}
+	if addCmd == nil || addCmd.Name() != "add" {
+		t.Fatalf("expected catalogs add command, got %#v", addCmd)
+	}
+
+	removeCmd, _, err := cmd.Find([]string{"catalogs", "remove"})
+	if err != nil {
+		t.Fatalf("Find(catalogs remove) error = %v", err)
+	}
+	if removeCmd == nil || removeCmd.Name() != "remove" {
+		t.Fatalf("expected catalogs remove command, got %#v", removeCmd)
+	}
+}
+
 func TestInitRequiresDefaultPackageManagerFlag(t *testing.T) {
 	cmd, _ := newTestRootCmd(t)
 	cmd.SetArgs([]string{"init"})

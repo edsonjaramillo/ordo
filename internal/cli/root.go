@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 
+	catalogadapter "ordo/internal/adapters/catalog"
 	execadapter "ordo/internal/adapters/exec"
 	fsadapter "ordo/internal/adapters/fs"
 	registryadapter "ordo/internal/adapters/registry"
@@ -27,12 +28,16 @@ func NewRootCmd() (*cobra.Command, error) {
 	suggestor := registryadapter.NewNPMSuggestor()
 	printer := output.NewPrinter()
 	configStore := fsadapter.NewConfigStore()
+	catalogStore := catalogadapter.NewStore(cwd, configStore)
+	manifestStore := catalogadapter.NewManifestStore(cwd, configStore)
 	installCompletion := app.NewInstallCompletionService(discovery, suggestor)
 	completer := completion.NewTargetCompleter(discovery, installCompletion)
 	globalCompletion := app.NewGlobalCompletionService(installCompletion, runner, runner)
 	globalCompleter := completion.NewGlobalCompleter(globalCompletion)
 	presetCompletion := app.NewPresetCompletionService(configStore)
 	presetCompleter := completion.NewPresetCompleter(presetCompletion)
+	catalogCompletion := app.NewCatalogCompletionService(discovery, installCompletion, catalogStore)
+	catalogCompleter := completion.NewCatalogCompleter(catalogCompletion)
 
 	runUC := app.NewRunUseCase(discovery, runner)
 	installUC := app.NewInstallUseCase(discovery, runner)
@@ -43,6 +48,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	globalUpdateUC := app.NewGlobalUpdateUseCase(runner)
 	initUC := app.NewInitUseCase(configStore)
 	presetUC := app.NewPresetUseCase(discovery, runner, configStore)
+	catalogUC := app.NewCatalogUseCase(discovery, catalogStore, manifestStore, registryadapter.NewNPMLatestResolver())
 	var colorFlag string
 	var noLevelFlag bool
 
@@ -84,6 +90,8 @@ func NewRootCmd() (*cobra.Command, error) {
 	cmd.AddCommand(newGlobalCmd(globalInstallUC, globalUninstallUC, globalUpdateUC, globalCompleter, printer))
 	cmd.AddCommand(newInitCmd(initUC, globalCompleter, printer))
 	cmd.AddCommand(newPresetCmd(presetUC, presetCompleter, completer, printer))
+	cmd.AddCommand(newCatalogCmd(catalogUC, catalogCompleter, printer))
+	cmd.AddCommand(newCatalogsCmd(catalogUC, catalogCompleter, printer))
 
 	return cmd, nil
 }

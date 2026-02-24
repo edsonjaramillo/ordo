@@ -17,6 +17,9 @@ var (
 	ErrPresetNotFound        = errors.New("preset not found")
 	ErrPresetBucketNotFound  = errors.New("preset bucket not found")
 	ErrPresetPackageNotFound = errors.New("preset package not found")
+	ErrCatalogUnsupported    = errors.New("catalogs are unsupported for package manager")
+	ErrCatalogConflict       = errors.New("catalog entry conflict")
+	ErrInvalidCatalogName    = errors.New("invalid catalog name")
 )
 
 type GlobalPackageMissingError struct {
