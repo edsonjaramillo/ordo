@@ -31,6 +31,7 @@ func newGlobalUpdateCmd(uc app.GlobalUpdateUseCase, completer completion.GlobalC
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveError
 			}
+			items = filterCompletedArgs(items, args, 1)
 			return items, cobra.ShellCompDirectiveNoFileComp
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

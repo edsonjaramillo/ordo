@@ -39,6 +39,7 @@ func newPresetCmd(
 				if err != nil {
 					return nil, cobra.ShellCompDirectiveError
 				}
+				items = filterCompletedArgs(items, args, 2)
 				return items, cobra.ShellCompDirectiveNoFileComp
 			}
 		},
