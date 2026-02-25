@@ -415,3 +415,103 @@ func TestCatalogUseCaseImportRejectsCatalogReference(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestCatalogUseCasePresetAddWorkspaceWithFilter(t *testing.T) {
+	catalogs := &fakeCatalogStore{}
+	manifests := &fakeManifestStore{}
+	resolver := fakeVersionResolver{
+		versions: map[string]string{
+			"prettier": "3.5.3",
+		},
+	}
+	uc := NewCatalogUseCaseWithConfig(
+		NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}),
+		catalogs,
+		manifests,
+		resolver,
+		fakeConfigStore{
+			content: []byte(`{
+  "defaultPackageManager": "pnpm",
+  "presets": {
+    "prettier": {
+      "devDependencies": [
+        "prettier",
+        "prettier-plugin-tailwindcss"
+      ]
+    }
+  }
+}`),
+		},
+	)
+
+	err := uc.RunPreset(context.Background(), CatalogPresetRequest{
+		Preset:    "prettier",
+		Bucket:    "devDependencies",
+		Packages:  []string{"prettier"},
+		Workspace: "ui",
+		Force:     true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if catalogs.name != "" {
+		t.Fatalf("catalog name = %q, want default", catalogs.name)
+	}
+	if catalogs.entries["prettier"] != "^3.5.3" {
+		t.Fatalf("entries = %#v", catalogs.entries)
+	}
+	if !catalogs.force {
+		t.Fatal("force flag not propagated")
+	}
+	if manifests.dir != "packages/ui" || manifests.name != "" {
+		t.Fatalf("manifest target = %q name=%q", manifests.dir, manifests.name)
+	}
+	if len(manifests.packages) != 1 || manifests.packages[0] != "prettier" {
+		t.Fatalf("manifest packages = %#v", manifests.packages)
+	}
+}
+
+func TestCatalogUseCasePresetUnknownFilteredPackage(t *testing.T) {
+	uc := NewCatalogUseCaseWithConfig(
+		NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}),
+		&fakeCatalogStore{},
+		&fakeManifestStore{},
+		fakeVersionResolver{},
+		fakeConfigStore{
+			content: []byte(`{
+  "defaultPackageManager": "pnpm",
+  "presets": {
+    "prettier": {
+      "devDependencies": ["prettier"]
+    }
+  }
+}`),
+		},
+	)
+
+	err := uc.RunPreset(context.Background(), CatalogPresetRequest{
+		Preset:   "prettier",
+		Bucket:   "devDependencies",
+		Packages: []string{"prettier-plugin-tailwindcss"},
+	})
+	if !errors.Is(err, ErrPresetPackageNotFound) {
+		t.Fatalf("expected ErrPresetPackageNotFound, got %v", err)
+	}
+}
+
+func TestCatalogUseCasePresetMissingConfigStore(t *testing.T) {
+	uc := NewCatalogUseCase(
+		NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}),
+		&fakeCatalogStore{},
+		&fakeManifestStore{},
+		fakeVersionResolver{},
+	)
+
+	err := uc.RunPreset(context.Background(), CatalogPresetRequest{
+		Preset: "prettier",
+		Bucket: "devDependencies",
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}

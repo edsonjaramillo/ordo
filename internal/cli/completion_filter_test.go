@@ -190,6 +190,59 @@ func TestPresetCompletionPresetAndBucketAreUnchanged(t *testing.T) {
 	}
 }
 
+func TestCatalogPresetsCompletionFiltersAlreadySelectedPackage(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`{"presets":{"web":{"devDependencies":["eslint","prettier","typescript"]}}}`)
+	presetCompleter := completion.NewPresetCompleter(app.NewPresetCompletionService(testConfigStore{payload: cfg}))
+	cmd := newCatalogPresetsCmd(app.CatalogUseCase{}, completion.CatalogCompleter{}, presetCompleter, output.NewPrinter())
+
+	items, dir := cmd.ValidArgsFunction(cmd, []string{"web", "devDependencies", "prettier"}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+
+	want := []string{"eslint", "typescript"}
+	if len(items) != len(want) {
+		t.Fatalf("len(items) = %d, want %d (items=%#v)", len(items), len(want), items)
+	}
+	for i := range want {
+		if items[i] != want[i] {
+			t.Fatalf("items[%d] = %q, want %q", i, items[i], want[i])
+		}
+	}
+}
+
+func TestCatalogPresetsCompletionPresetAndBucketAreUnchanged(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`{"presets":{"web":{"dependencies":["react"],"devDependencies":["prettier"]}}}`)
+	presetCompleter := completion.NewPresetCompleter(app.NewPresetCompletionService(testConfigStore{payload: cfg}))
+	cmd := newCatalogPresetsCmd(app.CatalogUseCase{}, completion.CatalogCompleter{}, presetCompleter, output.NewPrinter())
+
+	presets, dir := cmd.ValidArgsFunction(cmd, []string{}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+	if len(presets) != 1 || presets[0] != "web" {
+		t.Fatalf("unexpected presets: %#v", presets)
+	}
+
+	buckets, dir := cmd.ValidArgsFunction(cmd, []string{"web"}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+	wantBuckets := []string{"dependencies", "devDependencies"}
+	if len(buckets) != len(wantBuckets) {
+		t.Fatalf("len(buckets) = %d, want %d (buckets=%#v)", len(buckets), len(wantBuckets), buckets)
+	}
+	for i := range wantBuckets {
+		if buckets[i] != wantBuckets[i] {
+			t.Fatalf("buckets[%d] = %q, want %q", i, buckets[i], wantBuckets[i])
+		}
+	}
+}
+
 func TestUpdateCompletionFiltersAlreadySelectedTarget(t *testing.T) {
 	t.Parallel()
 

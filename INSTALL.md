@@ -56,6 +56,8 @@ ordo update react
 ordo update ui/clsx
 ordo preset prettier devDependencies
 ordo preset prettier devDependencies prettier-plugin-tailwindcss --workspace ui
+ordo catalog presets prettier devDependencies
+ordo catalog presets prettier devDependencies prettier-plugin-tailwindcss --workspace ui --force
 ```
 
 Global package management:
@@ -83,3 +85,7 @@ Shell completion support:
 - `ordo preset <preset> <TAB>` suggests preset buckets that have packages.
 - `ordo preset <preset> <bucket> <TAB>` suggests package names for that preset bucket.
 - `ordo preset --workspace <TAB>` suggests discovered workspace keys.
+- `ordo catalog presets <TAB>` suggests preset names from `ordo.json`.
+- `ordo catalog presets <preset> <TAB>` suggests preset buckets that have packages.
+- `ordo catalog presets <preset> <bucket> <TAB>` suggests package names for that preset bucket.
+- `ordo catalog presets --workspace <TAB>` suggests discovered workspace keys.

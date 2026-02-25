@@ -215,6 +215,14 @@ func TestRootRegistersCatalogCommand(t *testing.T) {
 	if syncCmd == nil || syncCmd.Name() != "sync" {
 		t.Fatalf("expected catalog sync command, got %#v", syncCmd)
 	}
+
+	presetsCmd, _, err := cmd.Find([]string{"catalog", "presets"})
+	if err != nil {
+		t.Fatalf("Find(catalog presets) error = %v", err)
+	}
+	if presetsCmd == nil || presetsCmd.Name() != "presets" {
+		t.Fatalf("expected catalog presets command, got %#v", presetsCmd)
+	}
 }
 
 func TestRootRegistersCatalogsCommand(t *testing.T) {

@@ -48,7 +48,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	globalUpdateUC := app.NewGlobalUpdateUseCase(runner)
 	initUC := app.NewInitUseCase(configStore)
 	presetUC := app.NewPresetUseCase(discovery, runner, configStore)
-	catalogUC := app.NewCatalogUseCase(discovery, catalogStore, manifestStore, registryadapter.NewNPMLatestResolver())
+	catalogUC := app.NewCatalogUseCaseWithConfig(discovery, catalogStore, manifestStore, registryadapter.NewNPMLatestResolver(), configStore)
 	var colorFlag string
 	var noLevelFlag bool
 
@@ -90,7 +90,7 @@ func NewRootCmd() (*cobra.Command, error) {
 	cmd.AddCommand(newGlobalCmd(globalInstallUC, globalUninstallUC, globalUpdateUC, globalCompleter, printer))
 	cmd.AddCommand(newInitCmd(initUC, globalCompleter, printer))
 	cmd.AddCommand(newPresetCmd(presetUC, presetCompleter, completer, printer))
-	cmd.AddCommand(newCatalogCmd(catalogUC, catalogCompleter, printer))
+	cmd.AddCommand(newCatalogCmd(catalogUC, catalogCompleter, presetCompleter, printer))
 	cmd.AddCommand(newCatalogsCmd(catalogUC, catalogCompleter, printer))
 
 	return cmd, nil

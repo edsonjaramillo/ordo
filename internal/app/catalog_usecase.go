@@ -40,11 +40,20 @@ type CatalogImportRequest struct {
 	Force         bool
 }
 
+type CatalogPresetRequest struct {
+	Preset    string
+	Bucket    string
+	Packages  []string
+	Workspace string
+	Force     bool
+}
+
 type CatalogUseCase struct {
 	discovery DiscoveryService
 	catalogs  ports.CatalogStore
 	manifests ports.ManifestStore
 	versions  ports.PackageVersionResolver
+	config    presetConfigService
 }
 
 func NewCatalogUseCase(
@@ -53,11 +62,22 @@ func NewCatalogUseCase(
 	manifests ports.ManifestStore,
 	versions ports.PackageVersionResolver,
 ) CatalogUseCase {
+	return NewCatalogUseCaseWithConfig(discovery, catalogs, manifests, versions, nil)
+}
+
+func NewCatalogUseCaseWithConfig(
+	discovery DiscoveryService,
+	catalogs ports.CatalogStore,
+	manifests ports.ManifestStore,
+	versions ports.PackageVersionResolver,
+	configStore ports.ConfigStore,
+) CatalogUseCase {
 	return CatalogUseCase{
 		discovery: discovery,
 		catalogs:  catalogs,
 		manifests: manifests,
 		versions:  versions,
+		config:    newPresetConfigService(configStore),
 	}
 }
 
@@ -148,6 +168,29 @@ func (u CatalogUseCase) RunImport(ctx context.Context, req CatalogImportRequest)
 	}
 
 	return u.manifests.RewriteCatalogReferencesExistingOnly(ctx, source.Dir, "", []string{pkg})
+}
+
+func (u CatalogUseCase) RunPreset(ctx context.Context, req CatalogPresetRequest) error {
+	if u.config.configStore == nil {
+		return fmt.Errorf("preset config store is not configured")
+	}
+
+	bucket, err := domain.ParsePresetBucket(req.Bucket)
+	if err != nil {
+		return err
+	}
+
+	packages, err := u.config.bucketPackages(req.Preset, bucket)
+	if err != nil {
+		return err
+	}
+
+	selected, err := filterPresetPackages(packages, req.Packages)
+	if err != nil {
+		return err
+	}
+
+	return u.applyAdd(ctx, "", selected, req.Workspace, req.Force)
 }
 
 func (u CatalogUseCase) applyAdd(ctx context.Context, name string, rawPackages []string, workspace string, force bool) error {
