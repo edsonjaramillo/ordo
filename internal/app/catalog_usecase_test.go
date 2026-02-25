@@ -110,7 +110,7 @@ func TestCatalogUseCaseDefaultCatalogAdd(t *testing.T) {
 	if catalogs.name != "" {
 		t.Fatalf("name = %q, want default", catalogs.name)
 	}
-	if catalogs.entries["react"] != "19.1.0" {
+	if catalogs.entries["react"] != "^19.1.0" {
 		t.Fatalf("entries = %#v", catalogs.entries)
 	}
 	if !catalogs.force {
@@ -142,6 +142,46 @@ func TestCatalogUseCaseNamedCatalogAddWorkspace(t *testing.T) {
 		t.Fatalf("manifest name = %q", manifests.name)
 	}
 	if catalogs.entries["react"] != "19.1.0" {
+		t.Fatalf("entries = %#v", catalogs.entries)
+	}
+}
+
+func TestCatalogUseCaseNamedCatalogAddWorkspaceImplicitLatestUsesCaret(t *testing.T) {
+	catalogs := &fakeCatalogStore{}
+	manifests := &fakeManifestStore{}
+	resolver := fakeVersionResolver{versions: map[string]string{"react": "19.1.0"}}
+	uc := NewCatalogUseCase(NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}), catalogs, manifests, resolver)
+
+	err := uc.RunNamedAdd(context.Background(), CatalogsAddRequest{Name: "react19", Workspace: "ui", Packages: []string{"react"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if catalogs.entries["react"] != "^19.1.0" {
+		t.Fatalf("entries = %#v", catalogs.entries)
+	}
+}
+
+func TestCatalogUseCaseDefaultCatalogAddMixedImplicitAndExplicitVersions(t *testing.T) {
+	catalogs := &fakeCatalogStore{}
+	manifests := &fakeManifestStore{}
+	resolver := fakeVersionResolver{
+		versions: map[string]string{"react": "19.1.0"},
+	}
+	uc := NewCatalogUseCase(NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}), catalogs, manifests, resolver)
+
+	err := uc.RunAdd(context.Background(), CatalogAddRequest{
+		Packages: []string{"react", "zod@3.25.0"},
+		Force:    true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if catalogs.entries["react"] != "^19.1.0" {
+		t.Fatalf("entries = %#v", catalogs.entries)
+	}
+	if catalogs.entries["zod"] != "3.25.0" {
 		t.Fatalf("entries = %#v", catalogs.entries)
 	}
 }

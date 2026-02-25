@@ -220,7 +220,10 @@ func (u CatalogUseCase) resolvePackageVersions(ctx context.Context, rawPackages 
 			if err != nil {
 				return nil, err
 			}
-			spec.Version = version
+			if strings.TrimSpace(version) == "" {
+				return nil, fmt.Errorf("latest version not found for %s", spec.Package)
+			}
+			spec.Version = "^" + version
 		}
 
 		resolved[spec.Package] = spec.Version
