@@ -29,3 +29,7 @@ func (c CatalogCompleter) NamedCatalogs(ctx context.Context, prefix string) ([]s
 func (c CatalogCompleter) CatalogPackageNames(ctx context.Context, name string, prefix string) ([]string, error) {
 	return c.catalogs.CatalogPackageNames(ctx, name, prefix)
 }
+
+func (c CatalogCompleter) WorkspaceDependencyNames(ctx context.Context, workspace string, prefix string) ([]string, error) {
+	return c.catalogs.WorkspaceDependencyNames(ctx, workspace, prefix)
+}

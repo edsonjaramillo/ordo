@@ -34,6 +34,12 @@ type CatalogsRemoveRequest struct {
 
 type CatalogSyncRequest struct{}
 
+type CatalogImportRequest struct {
+	Package       string
+	FromWorkspace string
+	Force         bool
+}
+
 type CatalogUseCase struct {
 	discovery DiscoveryService
 	catalogs  ports.CatalogStore
@@ -103,6 +109,45 @@ func (u CatalogUseCase) RunSync(ctx context.Context, _ CatalogSyncRequest) error
 	}
 
 	return nil
+}
+
+func (u CatalogUseCase) RunImport(ctx context.Context, req CatalogImportRequest) error {
+	snapshot, err := u.discovery.Snapshot(ctx)
+	if err != nil {
+		return err
+	}
+
+	if !domain.SupportsCatalogs(snapshot.Manager) {
+		return fmt.Errorf("%w: %s", ErrCatalogUnsupported, snapshot.Manager)
+	}
+
+	source, err := resolveInstallTargetPackage(snapshot, req.FromWorkspace)
+	if err != nil {
+		return err
+	}
+
+	pkg := strings.TrimSpace(req.Package)
+	if pkg == "" {
+		return fmt.Errorf("package cannot be empty")
+	}
+
+	version, ok := source.DependencyVersions[pkg]
+	if !ok {
+		return fmt.Errorf("%w: %s/%s", ErrPackageNotFound, req.FromWorkspace, pkg)
+	}
+	if strings.HasPrefix(strings.TrimSpace(version), "catalog:") {
+		return fmt.Errorf("package already uses catalog reference: %s", pkg)
+	}
+
+	entries := map[string]string{pkg: version}
+	if err := u.catalogs.UpsertCatalogEntries(ctx, snapshot.Manager, "", entries, req.Force); err != nil {
+		if strings.Contains(err.Error(), "catalog conflict") {
+			return fmt.Errorf("%w: %v", ErrCatalogConflict, err)
+		}
+		return err
+	}
+
+	return u.manifests.RewriteCatalogReferencesExistingOnly(ctx, source.Dir, "", []string{pkg})
 }
 
 func (u CatalogUseCase) applyAdd(ctx context.Context, name string, rawPackages []string, workspace string, force bool) error {

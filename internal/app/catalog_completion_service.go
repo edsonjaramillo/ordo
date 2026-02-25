@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"strings"
 
 	"ordo/internal/domain"
 	"ordo/internal/ports"
@@ -60,5 +61,32 @@ func (s CatalogCompletionService) CatalogPackageNames(ctx context.Context, name 
 	if err != nil {
 		return nil, err
 	}
+	return filterAndSort(items, prefix), nil
+}
+
+func (s CatalogCompletionService) WorkspaceDependencyNames(ctx context.Context, workspace string, prefix string) ([]string, error) {
+	snapshot, err := s.discovery.Snapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	key := strings.TrimSpace(workspace)
+	if key == "" {
+		return []string{}, nil
+	}
+
+	pkg, ok := snapshot.ByWorkspace[key]
+	if !ok {
+		return []string{}, nil
+	}
+
+	items := make([]string, 0, len(pkg.DependencyVersions))
+	for name, version := range pkg.DependencyVersions {
+		if strings.HasPrefix(strings.TrimSpace(version), "catalog:") {
+			continue
+		}
+		items = append(items, name)
+	}
+
 	return filterAndSort(items, prefix), nil
 }

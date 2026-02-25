@@ -105,19 +105,7 @@ func parsePackageInfo(content []byte) (domain.PackageInfo, error) {
 		return domain.PackageInfo{}, err
 	}
 
-	deps := map[string]struct{}{}
-	for name := range manifest.Dependencies {
-		deps[name] = struct{}{}
-	}
-	for name := range manifest.DevDependencies {
-		deps[name] = struct{}{}
-	}
-	for name := range manifest.PeerDependencies {
-		deps[name] = struct{}{}
-	}
-	for name := range manifest.OptionalDependencies {
-		deps[name] = struct{}{}
-	}
+	deps, versions := dependencyData(manifest)
 
 	scripts := manifest.Scripts
 	if scripts == nil {
@@ -125,9 +113,33 @@ func parsePackageInfo(content []byte) (domain.PackageInfo, error) {
 	}
 
 	return domain.PackageInfo{
-		Scripts:      scripts,
-		Dependencies: deps,
+		Scripts:            scripts,
+		Dependencies:       deps,
+		DependencyVersions: versions,
 	}, nil
+}
+
+func dependencyData(manifest packageJSON) (map[string]struct{}, map[string]string) {
+	deps := map[string]struct{}{}
+	versions := map[string]string{}
+
+	add := func(items map[string]string) {
+		for name, version := range items {
+			deps[name] = struct{}{}
+			if _, ok := versions[name]; ok {
+				continue
+			}
+			versions[name] = version
+		}
+	}
+
+	// Precedence for duplicate names across sections.
+	add(manifest.Dependencies)
+	add(manifest.DevDependencies)
+	add(manifest.PeerDependencies)
+	add(manifest.OptionalDependencies)
+
+	return deps, versions
 }
 
 func fileExists(path string) bool {

@@ -32,6 +32,9 @@ func (d DiscoveryService) Snapshot(ctx context.Context) (Snapshot, error) {
 		if info.Dependencies == nil {
 			info.Dependencies = map[string]struct{}{}
 		}
+		if info.DependencyVersions == nil {
+			info.DependencyVersions = map[string]string{}
+		}
 		if info.Lockfiles == nil {
 			info.Lockfiles = map[string]bool{}
 		}

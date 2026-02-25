@@ -15,8 +15,48 @@ func newCatalogCmd(uc app.CatalogUseCase, completer completion.CatalogCompleter,
 	}
 
 	cmd.AddCommand(newCatalogAddCmd(uc, completer, printer))
+	cmd.AddCommand(newCatalogImportCmd(uc, completer, printer))
 	cmd.AddCommand(newCatalogRemoveCmd(uc, completer, printer))
 	cmd.AddCommand(newCatalogSyncCmd(uc, printer))
+
+	return cmd
+}
+
+func newCatalogImportCmd(uc app.CatalogUseCase, completer completion.CatalogCompleter, printer output.Printer) *cobra.Command {
+	var fromWorkspace string
+	var force bool
+
+	cmd := &cobra.Command{
+		Use:   "import <pkg>",
+		Short: "Import a workspace dependency version into the root catalog",
+		Args:  cobra.ExactArgs(1),
+		ValidArgsFunction: func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			items, err := completer.WorkspaceDependencyNames(cmd.Context(), fromWorkspace, toComplete)
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveError
+			}
+			return items, cobra.ShellCompDirectiveNoFileComp
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			err := uc.RunImport(cmd.Context(), app.CatalogImportRequest{
+				Package:       args[0],
+				FromWorkspace: fromWorkspace,
+				Force:         force,
+			})
+			return printer.Handle(cmd.ErrOrStderr(), err)
+		},
+	}
+
+	cmd.Flags().StringVar(&fromWorkspace, "from-workspace", "", "Source workspace key to copy package version from")
+	cmd.Flags().BoolVar(&force, "force", false, "Override conflicting existing catalog versions")
+	_ = cmd.MarkFlagRequired("from-workspace")
+	_ = cmd.RegisterFlagCompletionFunc("from-workspace", func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		items, err := completer.WorkspaceKeys(cmd.Context(), toComplete)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+		return items, cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }

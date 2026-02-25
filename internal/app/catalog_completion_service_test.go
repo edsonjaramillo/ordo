@@ -40,7 +40,7 @@ func TestCatalogCompletionServiceNamedCatalogsUnsupportedManager(t *testing.T) {
 func TestCatalogCompletionServiceCatalogPackageNames(t *testing.T) {
 	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
 	install := NewInstallCompletionService(discovery, nil)
-	store := &fakeCatalogStore{catalogByName: map[string][]string{"": []string{"react", "react-dom"}}}
+	store := &fakeCatalogStore{catalogByName: map[string][]string{"": {"react", "react-dom"}}}
 	svc := NewCatalogCompletionService(discovery, install, store)
 
 	items, err := svc.CatalogPackageNames(context.Background(), "", "react")
@@ -49,5 +49,50 @@ func TestCatalogCompletionServiceCatalogPackageNames(t *testing.T) {
 	}
 	if len(items) != 2 || items[0] != "react" || items[1] != "react-dom" {
 		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func TestCatalogCompletionServiceWorkspaceDependencyNames(t *testing.T) {
+	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
+	install := NewInstallCompletionService(discovery, nil)
+	svc := NewCatalogCompletionService(discovery, install, &fakeCatalogStore{})
+
+	items, err := svc.WorkspaceDependencyNames(context.Background(), "ui", "cl")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(items) != 1 || items[0] != "clsx" {
+		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func TestCatalogCompletionServiceWorkspaceDependencyNamesFiltersCatalogRefs(t *testing.T) {
+	infos := fixtureInfos()
+	infos[1].Dependencies["zod"] = struct{}{}
+	infos[1].DependencyVersions["zod"] = "catalog:"
+	discovery := NewDiscoveryService(fakeIndexer{infos: infos})
+	install := NewInstallCompletionService(discovery, nil)
+	svc := NewCatalogCompletionService(discovery, install, &fakeCatalogStore{})
+
+	items, err := svc.WorkspaceDependencyNames(context.Background(), "ui", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(items) != 1 || items[0] != "clsx" {
+		t.Fatalf("unexpected items: %#v", items)
+	}
+}
+
+func TestCatalogCompletionServiceWorkspaceDependencyNamesUnknownWorkspace(t *testing.T) {
+	discovery := NewDiscoveryService(fakeIndexer{infos: fixtureInfos()})
+	install := NewInstallCompletionService(discovery, nil)
+	svc := NewCatalogCompletionService(discovery, install, &fakeCatalogStore{})
+
+	items, err := svc.WorkspaceDependencyNames(context.Background(), "missing", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(items) != 0 {
+		t.Fatalf("expected no items, got %#v", items)
 	}
 }

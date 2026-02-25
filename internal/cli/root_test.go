@@ -192,6 +192,14 @@ func TestRootRegistersCatalogCommand(t *testing.T) {
 		t.Fatalf("expected catalog add command, got %#v", addCmd)
 	}
 
+	importCmd, _, err := cmd.Find([]string{"catalog", "import"})
+	if err != nil {
+		t.Fatalf("Find(catalog import) error = %v", err)
+	}
+	if importCmd == nil || importCmd.Name() != "import" {
+		t.Fatalf("expected catalog import command, got %#v", importCmd)
+	}
+
 	removeCmd, _, err := cmd.Find([]string{"catalog", "remove"})
 	if err != nil {
 		t.Fatalf("Find(catalog remove) error = %v", err)

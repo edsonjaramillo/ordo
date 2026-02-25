@@ -147,15 +147,17 @@ func TestSnapshotWorkspaceCollision(t *testing.T) {
 func fixtureInfos() []domain.PackageInfo {
 	return []domain.PackageInfo{
 		{
-			Dir:          ".",
-			Scripts:      map[string]string{"build": "turbo run build"},
-			Dependencies: map[string]struct{}{"react": {}},
-			Lockfiles:    map[string]bool{"pnpm-lock.yaml": true},
+			Dir:                ".",
+			Scripts:            map[string]string{"build": "turbo run build"},
+			Dependencies:       map[string]struct{}{"react": {}},
+			DependencyVersions: map[string]string{"react": "^19.0.0"},
+			Lockfiles:          map[string]bool{"pnpm-lock.yaml": true},
 		},
 		{
-			Dir:          "packages/ui",
-			Scripts:      map[string]string{"build": "tsup"},
-			Dependencies: map[string]struct{}{"clsx": {}},
+			Dir:                "packages/ui",
+			Scripts:            map[string]string{"build": "tsup"},
+			Dependencies:       map[string]struct{}{"clsx": {}},
+			DependencyVersions: map[string]string{"clsx": "^2.1.1"},
 		},
 	}
 }

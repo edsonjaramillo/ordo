@@ -50,6 +50,7 @@ type fakeManifestStore struct {
 	name     string
 	packages []string
 	sync     []manifestRewriteCall
+	existing []manifestRewriteCall
 	err      error
 }
 
@@ -67,11 +68,13 @@ func (f *fakeManifestStore) RewriteCatalogReferences(_ context.Context, targetDi
 }
 
 func (f *fakeManifestStore) RewriteCatalogReferencesExistingOnly(_ context.Context, targetDir string, catalogName string, packages []string) error {
-	f.sync = append(f.sync, manifestRewriteCall{
+	call := manifestRewriteCall{
 		dir:      targetDir,
 		name:     catalogName,
 		packages: append([]string(nil), packages...),
-	})
+	}
+	f.existing = append(f.existing, call)
+	f.sync = append(f.sync, call)
 	return f.err
 }
 
@@ -206,7 +209,7 @@ func TestCatalogUseCaseRemoveRejectsVersion(t *testing.T) {
 func TestCatalogUseCaseSync(t *testing.T) {
 	catalogs := &fakeCatalogStore{
 		catalogByName: map[string][]string{
-			"": []string{"react", "zod"},
+			"": {"react", "zod"},
 		},
 	}
 	manifests := &fakeManifestStore{}
@@ -231,7 +234,7 @@ func TestCatalogUseCaseSync(t *testing.T) {
 }
 
 func TestCatalogUseCaseSyncNoCatalogEntries(t *testing.T) {
-	catalogs := &fakeCatalogStore{catalogByName: map[string][]string{"": []string{}}}
+	catalogs := &fakeCatalogStore{catalogByName: map[string][]string{"": {}}}
 	manifests := &fakeManifestStore{}
 	uc := NewCatalogUseCase(NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}), catalogs, manifests, fakeVersionResolver{})
 
@@ -273,5 +276,102 @@ func TestCatalogUseCaseSyncUnsupportedManager(t *testing.T) {
 	err := uc.RunSync(context.Background(), CatalogSyncRequest{})
 	if !errors.Is(err, ErrCatalogUnsupported) {
 		t.Fatalf("expected ErrCatalogUnsupported, got %v", err)
+	}
+}
+
+func TestCatalogUseCaseImportWorkspaceDependency(t *testing.T) {
+	catalogs := &fakeCatalogStore{}
+	manifests := &fakeManifestStore{}
+	uc := NewCatalogUseCase(NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}), catalogs, manifests, fakeVersionResolver{})
+
+	err := uc.RunImport(context.Background(), CatalogImportRequest{
+		Package:       "clsx",
+		FromWorkspace: "ui",
+		Force:         true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if catalogs.name != "" {
+		t.Fatalf("catalog name = %q, want default", catalogs.name)
+	}
+	if catalogs.entries["clsx"] != "^2.1.1" {
+		t.Fatalf("entries = %#v", catalogs.entries)
+	}
+	if !catalogs.force {
+		t.Fatal("force flag not propagated")
+	}
+	if len(manifests.existing) != 1 {
+		t.Fatalf("existing rewrites = %#v", manifests.existing)
+	}
+	if manifests.existing[0].dir != "packages/ui" {
+		t.Fatalf("rewrite dir = %q, want packages/ui", manifests.existing[0].dir)
+	}
+	if len(manifests.existing[0].packages) != 1 || manifests.existing[0].packages[0] != "clsx" {
+		t.Fatalf("rewrite packages = %#v", manifests.existing[0].packages)
+	}
+}
+
+func TestCatalogUseCaseImportWorkspaceMissing(t *testing.T) {
+	uc := NewCatalogUseCase(NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}), &fakeCatalogStore{}, &fakeManifestStore{}, fakeVersionResolver{})
+
+	err := uc.RunImport(context.Background(), CatalogImportRequest{
+		Package:       "clsx",
+		FromWorkspace: "missing",
+	})
+	if !errors.Is(err, ErrWorkspaceNotFound) {
+		t.Fatalf("expected ErrWorkspaceNotFound, got %v", err)
+	}
+}
+
+func TestCatalogUseCaseImportPackageMissing(t *testing.T) {
+	uc := NewCatalogUseCase(NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}), &fakeCatalogStore{}, &fakeManifestStore{}, fakeVersionResolver{})
+
+	err := uc.RunImport(context.Background(), CatalogImportRequest{
+		Package:       "left-pad",
+		FromWorkspace: "ui",
+	})
+	if !errors.Is(err, ErrPackageNotFound) {
+		t.Fatalf("expected ErrPackageNotFound, got %v", err)
+	}
+}
+
+func TestCatalogUseCaseImportConflict(t *testing.T) {
+	catalogs := &fakeCatalogStore{err: errors.New("catalog conflict")}
+	uc := NewCatalogUseCase(NewDiscoveryService(fakeIndexer{infos: fixtureInfos()}), catalogs, &fakeManifestStore{}, fakeVersionResolver{})
+
+	err := uc.RunImport(context.Background(), CatalogImportRequest{
+		Package:       "clsx",
+		FromWorkspace: "ui",
+	})
+	if !errors.Is(err, ErrCatalogConflict) {
+		t.Fatalf("expected ErrCatalogConflict, got %v", err)
+	}
+}
+
+func TestCatalogUseCaseImportUnsupportedManager(t *testing.T) {
+	discovery := NewDiscoveryService(fakeIndexer{infos: []domain.PackageInfo{{Dir: ".", Lockfiles: map[string]bool{"package-lock.json": true}}}})
+	uc := NewCatalogUseCase(discovery, &fakeCatalogStore{}, &fakeManifestStore{}, fakeVersionResolver{})
+
+	err := uc.RunImport(context.Background(), CatalogImportRequest{
+		Package:       "clsx",
+		FromWorkspace: "ui",
+	})
+	if !errors.Is(err, ErrCatalogUnsupported) {
+		t.Fatalf("expected ErrCatalogUnsupported, got %v", err)
+	}
+}
+
+func TestCatalogUseCaseImportRejectsCatalogReference(t *testing.T) {
+	infos := fixtureInfos()
+	infos[1].DependencyVersions["clsx"] = "catalog:"
+	uc := NewCatalogUseCase(NewDiscoveryService(fakeIndexer{infos: infos}), &fakeCatalogStore{}, &fakeManifestStore{}, fakeVersionResolver{})
+
+	err := uc.RunImport(context.Background(), CatalogImportRequest{
+		Package:       "clsx",
+		FromWorkspace: "ui",
+	})
+	if err == nil {
+		t.Fatal("expected error")
 	}
 }
