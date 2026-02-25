@@ -57,7 +57,7 @@ func newCatalogsAddCmd(uc app.CatalogUseCase, completer completion.CatalogComple
 
 	cmd.Flags().StringVar(&workspace, "workspace", "", "Workspace key to apply dependency references (default: root)")
 	cmd.Flags().BoolVar(&force, "force", false, "Override conflicting existing catalog versions")
-	_ = cmd.RegisterFlagCompletionFunc("workspace", func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	mustRegisterFlagCompletionFunc(cmd, "workspace", func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		items, err := completer.WorkspaceKeys(cmd.Context(), toComplete)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError

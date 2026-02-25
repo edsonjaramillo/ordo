@@ -20,11 +20,12 @@ func newInstallCmd(uc app.InstallUseCase, completer completion.TargetCompleter, 
 		Use:   "install <pkg[@version]>...",
 		Short: "Install one or more dependencies in root or workspace",
 		Args:  cobra.MinimumNArgs(1),
-		ValidArgsFunction: func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			items, err := completer.InstallPackages(cmd.Context(), toComplete)
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveError
 			}
+			items = filterCompletedArgs(items, args, 0)
 			return items, cobra.ShellCompDirectiveNoFileComp
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -48,7 +49,7 @@ func newInstallCmd(uc app.InstallUseCase, completer completion.TargetCompleter, 
 	cmd.Flags().BoolVar(&prod, "prod", false, "Install as a production dependency")
 	cmd.Flags().BoolVar(&exact, "exact", false, "Pin exact version")
 
-	_ = cmd.RegisterFlagCompletionFunc("workspace", func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	mustRegisterFlagCompletionFunc(cmd, "workspace", func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		items, err := completer.WorkspaceKeys(cmd.Context(), toComplete)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError

@@ -13,7 +13,10 @@ func newRunCmd(uc app.RunUseCase, completer completion.TargetCompleter, printer 
 		Use:   "run <target> [-- <args...>]",
 		Short: "Run a package script in root or workspace",
 		Args:  cobra.MinimumNArgs(1),
-		ValidArgsFunction: func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			if len(args) > 0 {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
 			items, err := completer.ScriptTargets(cmd.Context(), toComplete)
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveError

@@ -137,6 +137,39 @@ func TestGlobalInstallCompletionFiltersAlreadySelectedPackage(t *testing.T) {
 	}
 }
 
+func TestInstallCompletionFiltersAlreadySelectedPackage(t *testing.T) {
+	t.Parallel()
+
+	indexer := testWorkspaceIndexer{
+		infos: []domain.PackageInfo{
+			{
+				Dir: ".",
+				Dependencies: map[string]struct{}{
+					"eslint":     {},
+					"prettier":   {},
+					"typescript": {},
+				},
+			},
+		},
+	}
+	cmd := newInstallCmd(app.InstallUseCase{}, newTestTargetCompleter(indexer), output.NewPrinter())
+
+	items, dir := cmd.ValidArgsFunction(cmd, []string{"prettier"}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+
+	want := []string{"eslint", "typescript"}
+	if len(items) != len(want) {
+		t.Fatalf("len(items) = %d, want %d (items=%#v)", len(items), len(want), items)
+	}
+	for i := range want {
+		if items[i] != want[i] {
+			t.Fatalf("items[%d] = %q, want %q", i, items[i], want[i])
+		}
+	}
+}
+
 func TestPresetCompletionFiltersAlreadySelectedPackage(t *testing.T) {
 	t.Parallel()
 
@@ -258,19 +291,128 @@ func TestUpdateCompletionFiltersAlreadySelectedTarget(t *testing.T) {
 			},
 		},
 	}
-	discovery := app.NewDiscoveryService(indexer)
-	targetCompleter := completion.NewTargetCompleter(
-		discovery,
-		app.NewInstallCompletionService(discovery, nil),
-	)
-	cmd := newUpdateCmd(app.UpdateUseCase{}, targetCompleter, output.NewPrinter())
+	cmd := newUpdateCmd(app.UpdateUseCase{}, newTestTargetCompleter(indexer), output.NewPrinter())
 
 	items, dir := cmd.ValidArgsFunction(cmd, []string{"typescript"}, "")
 	if dir != cobra.ShellCompDirectiveNoFileComp {
 		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
 	}
+	if len(items) != 0 {
+		t.Fatalf("len(items) = %d, want 0 (items=%#v)", len(items), items)
+	}
+}
 
-	want := []string{"eslint", "prettier"}
+func TestUninstallCompletionStopsAfterSingleTarget(t *testing.T) {
+	t.Parallel()
+
+	indexer := testWorkspaceIndexer{
+		infos: []domain.PackageInfo{
+			{
+				Dir: ".",
+				Dependencies: map[string]struct{}{
+					"eslint":     {},
+					"prettier":   {},
+					"typescript": {},
+				},
+			},
+		},
+	}
+	cmd := newUninstallCmd(app.UninstallUseCase{}, newTestTargetCompleter(indexer), output.NewPrinter())
+
+	items, dir := cmd.ValidArgsFunction(cmd, []string{"typescript"}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+	if len(items) != 0 {
+		t.Fatalf("len(items) = %d, want 0 (items=%#v)", len(items), items)
+	}
+}
+
+func TestRunCompletionStopsAfterSingleTarget(t *testing.T) {
+	t.Parallel()
+
+	indexer := testWorkspaceIndexer{
+		infos: []domain.PackageInfo{
+			{
+				Dir: ".",
+				Scripts: map[string]string{
+					"build": "vite build",
+					"test":  "vitest",
+				},
+			},
+		},
+	}
+	cmd := newRunCmd(app.RunUseCase{}, newTestTargetCompleter(indexer), output.NewPrinter())
+
+	items, dir := cmd.ValidArgsFunction(cmd, []string{"build"}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+	if len(items) != 0 {
+		t.Fatalf("len(items) = %d, want 0 (items=%#v)", len(items), items)
+	}
+}
+
+func TestCatalogImportCompletionStopsAfterSinglePackage(t *testing.T) {
+	t.Parallel()
+
+	indexer := testWorkspaceIndexer{
+		infos: []domain.PackageInfo{
+			{
+				Dir: "web",
+				Dependencies: map[string]struct{}{
+					"eslint": {},
+				},
+				DependencyVersions: map[string]string{
+					"eslint": "^9.0.0",
+				},
+			},
+		},
+	}
+	discovery := app.NewDiscoveryService(indexer)
+	installCompletion := app.NewInstallCompletionService(discovery, nil)
+	catalogCompleter := completion.NewCatalogCompleter(
+		app.NewCatalogCompletionService(discovery, installCompletion, testCatalogStore{}),
+	)
+	cmd := newCatalogImportCmd(app.CatalogUseCase{}, catalogCompleter, output.NewPrinter())
+
+	items, dir := cmd.ValidArgsFunction(cmd, []string{"eslint"}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+	if len(items) != 0 {
+		t.Fatalf("len(items) = %d, want 0 (items=%#v)", len(items), items)
+	}
+}
+
+func TestCatalogAddCompletionFiltersAlreadySelectedPackage(t *testing.T) {
+	t.Parallel()
+
+	indexer := testWorkspaceIndexer{
+		infos: []domain.PackageInfo{
+			{
+				Dir: ".",
+				Dependencies: map[string]struct{}{
+					"eslint":     {},
+					"prettier":   {},
+					"typescript": {},
+				},
+			},
+		},
+	}
+	discovery := app.NewDiscoveryService(indexer)
+	installCompletion := app.NewInstallCompletionService(discovery, nil)
+	catalogCompleter := completion.NewCatalogCompleter(
+		app.NewCatalogCompletionService(discovery, installCompletion, testCatalogStore{}),
+	)
+	cmd := newCatalogAddCmd(app.CatalogUseCase{}, catalogCompleter, output.NewPrinter())
+
+	items, dir := cmd.ValidArgsFunction(cmd, []string{"prettier"}, "")
+	if dir != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", dir, cobra.ShellCompDirectiveNoFileComp)
+	}
+
+	want := []string{"eslint", "typescript"}
 	if len(items) != len(want) {
 		t.Fatalf("len(items) = %d, want %d (items=%#v)", len(items), len(want), items)
 	}
@@ -279,6 +421,14 @@ func TestUpdateCompletionFiltersAlreadySelectedTarget(t *testing.T) {
 			t.Fatalf("items[%d] = %q, want %q", i, items[i], want[i])
 		}
 	}
+}
+
+func newTestTargetCompleter(indexer testWorkspaceIndexer) completion.TargetCompleter {
+	discovery := app.NewDiscoveryService(indexer)
+	return completion.NewTargetCompleter(
+		discovery,
+		app.NewInstallCompletionService(discovery, nil),
+	)
 }
 
 func newTestGlobalCompleter(indexer testWorkspaceIndexer, lister testGlobalLister) completion.GlobalCompleter {
@@ -318,6 +468,24 @@ type testAvailability struct {
 
 func (a testAvailability) AvailablePackageManagers(context.Context) ([]string, error) {
 	return a.managers, nil
+}
+
+type testCatalogStore struct{}
+
+func (s testCatalogStore) UpsertCatalogEntries(context.Context, domain.PackageManager, string, map[string]string, bool) error {
+	return nil
+}
+
+func (s testCatalogStore) RemoveCatalogEntries(context.Context, domain.PackageManager, string, []string) error {
+	return nil
+}
+
+func (s testCatalogStore) NamedCatalogs(context.Context, domain.PackageManager) ([]string, error) {
+	return nil, nil
+}
+
+func (s testCatalogStore) CatalogPackageNames(context.Context, domain.PackageManager, string) ([]string, error) {
+	return nil, nil
 }
 
 type testConfigStore struct {

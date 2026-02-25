@@ -21,8 +21,8 @@ func newInitCmd(uc app.InitUseCase, completer completion.GlobalCompleter, printe
 	}
 
 	cmd.Flags().StringVar(&defaultPackageManager, "defaultPackageManager", "", "Default package manager for generated config (bun, npm, pnpm, yarn)")
-	_ = cmd.MarkFlagRequired("defaultPackageManager")
-	_ = cmd.RegisterFlagCompletionFunc("defaultPackageManager", func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	mustMarkFlagRequired(cmd, "defaultPackageManager")
+	mustRegisterFlagCompletionFunc(cmd, "defaultPackageManager", func(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		items, err := completer.AvailablePackageManagers(cmd.Context(), toComplete)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
